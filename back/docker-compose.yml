@@ -3,35 +3,27 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
-    container_name: poly_postgres
+    container_name: polyclinic-db
     restart: always
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: polyclinic
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7
-    container_name: poly_redis
+  backend:
+    build: .
+    container_name: polyclinic-back
     restart: always
-    ports:
-      - "6379:6379"
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: poly_pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
+    env_file:
+      - .env
     depends_on:
       - postgres
+    ports:
+      - "3000:3000"
 
 volumes:
-  postgres_data:
+  pgdata:
