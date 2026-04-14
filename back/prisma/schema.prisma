@@ -1,11 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,7 +7,122 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  role         String
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+
+  patient Patient?
+  doctor  Doctor?
+}
+
+model Patient {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  lastName           String
+  firstName          String
+  middleName         String?
+  birthDate          DateTime
+  gender             String?
+  phone              String?
+  address            String?
+  medicalCardNumber  String?  @unique
+  primaryTherapistId Int?
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ДОБАВЛЕНО ИМЯ СВЯЗИ "primaryTherapist"
+  primaryTherapist Doctor? @relation("primaryTherapist", fields: [primaryTherapistId], references: [id])
+
+  appointments Appointment[]
+  visits       Visit[]
+}
+
+model Doctor {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  lastName       String
+  firstName      String
+  middleName     String?
+  specialization String
+  isTherapist    Boolean  @default(false)
+  phone          String?
+  createdAt      DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cabinets Cabinet[]
+
+  // ЗДЕСЬ ИМЯ УЖЕ БЫЛО, ТЕПЕРЬ ОНИ СОВПАДАЮТ
+  patients Patient[] @relation("primaryTherapist")
+
+  appointments Appointment[]
+  visits       Visit[]
+}
+
+model Cabinet {
+  id                Int      @id @default(autoincrement())
+  number            String   @unique
+  floor             Int?
+  doctorId          Int?
+  workingHoursStart String
+  workingHoursEnd   String
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  doctor       Doctor?       @relation(fields: [doctorId], references: [id])
+  appointments Appointment[]
+}
+
+model Appointment {
+  id              Int      @id @default(autoincrement())
+  patientId       Int
+  doctorId        Int
+  cabinetId       Int?
+  appointmentDate DateTime
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("scheduled")
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  patient Patient  @relation(fields: [patientId], references: [id])
+  doctor  Doctor   @relation(fields: [doctorId], references: [id])
+  cabinet Cabinet? @relation(fields: [cabinetId], references: [id])
+  visit   Visit?
+}
+
+model Visit {
+  id              Int      @id @default(autoincrement())
+  appointmentId   Int      @unique
+  patientId       Int
+  doctorId        Int
+  visitDatetime   DateTime
+  complaints      String?
+  diagnosis       String?
+  examination     String?
+  treatment       String?
+  recommendations String?
+  createdAt       DateTime @default(now())
+
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id])
+  patient       Patient        @relation(fields: [patientId], references: [id])
+  doctor        Doctor         @relation(fields: [doctorId], references: [id])
+  attachedFiles AttachedFile[]
+}
+
+model AttachedFile {
+  id          Int      @id @default(autoincrement())
+  visitId     Int
+  fileType    String
+  description String?
+  filePath    String
+  uploadedAt  DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
 }
