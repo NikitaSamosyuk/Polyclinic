@@ -11,6 +11,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { VisitsModule } from './visits/visits.module';
 import { AdminModule } from './admin/admin.module';
 import { CabinetsModule } from './cabinets/cabinets.module';
+import { DatabaseInitModule } from './database-init/database-init.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { CabinetsModule } from './cabinets/cabinets.module';
     AppointmentsModule,
     VisitsModule,
     AdminModule,
-    CabinetsModule, // важно: хотя бы один раз импортируем глобальный модуль
+    CabinetsModule,
+    DatabaseInitModule,
   ],
 })
 export class AppModule implements OnApplicationBootstrap {
