@@ -14,11 +14,14 @@
     "strictNullChecks": false,
     "noImplicitAny": false,
     "types": ["node"],
-    "ignoreDeprecations": "5.0"
+    "ignoreDeprecations": "5.0",
+    "lib": ["ES2021"],
+    "typeRoots": ["./src/types", "./node_modules/@types"]   // 🔥 ДОБАВЛЕНО
   },
   "include": [
     "src/**/*.ts",
-    "prisma/**/*.ts"
+    "prisma/**/*.ts",
+    "src/types/**/*.d.ts"   // 🔥 ДОБАВЛЕНО
   ],
   "exclude": [
     "node_modules",

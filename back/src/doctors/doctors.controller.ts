@@ -1,25 +1,46 @@
-import { Controller, Get, Param, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  UseInterceptors,
+  UploadedFile,
+  Req,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { DoctorsService } from './doctors.service';
-import { Public } from '../auth/public.decorator';
+import { extname } from 'path';
 
 @Controller('doctors')
 export class DoctorsController {
-  constructor(private readonly service: DoctorsService) {}
+  constructor(private doctors: DoctorsService) {}
 
-  @Public()
-  @Get()
-  getAllDoctors() {
-    return this.service.getAllDoctors();
+  @Get('photo')
+  async getPhoto(@Req() req) {
+    const doctor = await this.doctors.getByUserId(req.user.sub);
+
+    return {
+      photoUrl: doctor.photoUrl || '/uploads/defaults/doctor.png',
+    };
   }
 
-  @Public()
-  @Get(':id/schedule')
-  getSchedule(@Param('id') id: string) {
-    return this.service.getSchedule(Number(id));
-  }
+  @Post('photo')
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads/doctors',
+        filename: (req, file, cb) => {
+          const ext = extname(file.originalname);
+          cb(null, `doctor_${req.user.sub}${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadPhoto(@UploadedFile() file, @Req() req) {
+    const url = `/uploads/doctors/${file.filename}`;
 
-  @Get('profile')
-  getProfile(@Req() req) {
-    return this.service.getProfile(req.user.id);
+    await this.doctors.updatePhoto(req.user.sub, url);
+
+    return { photoUrl: url };
   }
 }

@@ -5,27 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class DoctorsService {
   constructor(private prisma: PrismaService) {}
 
-  getAllDoctors() {
-    return this.prisma.doctor.findMany({
-      include: { user: true },
-    });
+  getByUserId(userId: number) {
+    return this.prisma.doctor.findUnique({ where: { userId } });
   }
 
-  getSchedule(doctorId: number) {
-    return this.prisma.appointment.findMany({
-      where: { doctorId },
-      include: {
-        patient: { include: { user: true } },
-        cabinet: true,
-      },
-      orderBy: { startTime: 'asc' },
-    });
-  }
-
-  getProfile(userId: number) {
-    return this.prisma.doctor.findUnique({
+  updatePhoto(userId: number, photoUrl: string) {
+    return this.prisma.doctor.update({
       where: { userId },
-      include: { user: true },
+      data: { photoUrl },
     });
   }
 }

@@ -6,8 +6,10 @@ datasource db {
   provider = "postgresql"
 }
 
-generator seed {
-  provider = "prisma-client-js"
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
 }
 
 model User {
@@ -15,7 +17,7 @@ model User {
   username     String    @unique
   email        String    @unique
   passwordHash String
-  role         String
+  role         Role
   avatarUrl    String?
   isActive     Boolean   @default(true)
   lastLogin    DateTime?
@@ -41,8 +43,7 @@ model Patient {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // ДОБАВЛЕНО ИМЯ СВЯЗИ "primaryTherapist"
-  primaryTherapist Doctor? @relation("primaryTherapist", fields: [primaryTherapistId], references: [id])
+  primaryTherapist Doctor? @relation("TherapistPatients", fields: [primaryTherapistId], references: [id])
 
   appointments Appointment[]
   visits       Visit[]
@@ -59,27 +60,43 @@ model Doctor {
   phone          String?
   createdAt      DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cabinets Cabinet[]
+  photoUrl       String?   // 🔥 ДОБАВЛЕНО — фото доктора
 
-  // ЗДЕСЬ ИМЯ УЖЕ БЫЛО, ТЕПЕРЬ ОНИ СОВПАДАЮТ
-  patients Patient[] @relation("primaryTherapist")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cabinetId Int?
+  cabinet   Cabinet? @relation(fields: [cabinetId], references: [id])
+
+  patients Patient[] @relation("TherapistPatients")
 
   appointments Appointment[]
   visits       Visit[]
+
+  addressZones TherapistAddressZone[]
+}
+
+
+model TherapistAddressZone {
+  id        Int    @id @default(autoincrement())
+  doctorId  Int
+  zone      String
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
 
 model Cabinet {
   id                Int      @id @default(autoincrement())
   number            String   @unique
   floor             Int?
-  doctorId          Int?
+  specialization    String   // кабинет принимает только врачей этой специальности
   workingHoursStart String
   workingHoursEnd   String
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
 
-  doctor       Doctor?       @relation(fields: [doctorId], references: [id])
+  // до 2 врачей
+  doctors Doctor[]
+
   appointments Appointment[]
 }
 
@@ -87,7 +104,7 @@ model Appointment {
   id              Int      @id @default(autoincrement())
   patientId       Int
   doctorId        Int
-  cabinetId       Int?
+  cabinetId       Int
   appointmentDate DateTime
   startTime       DateTime
   endTime         DateTime
@@ -95,9 +112,9 @@ model Appointment {
   reason          String?
   createdAt       DateTime @default(now())
 
-  patient Patient  @relation(fields: [patientId], references: [id])
-  doctor  Doctor   @relation(fields: [doctorId], references: [id])
-  cabinet Cabinet? @relation(fields: [cabinetId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id])
   visit   Visit?
 }
 

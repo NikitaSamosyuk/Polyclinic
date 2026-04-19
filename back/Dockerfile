@@ -21,4 +21,4 @@ RUN pnpm build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "pnpm prisma db push && node dist/main.js"]

@@ -3,20 +3,10 @@ import { PatientsService } from './patients.service';
 
 @Controller('patients')
 export class PatientsController {
-  constructor(private readonly service: PatientsService) {}
+  constructor(private patients: PatientsService) {}
 
-  @Get('profile')
-  getProfile(@Req() req) {
-    return this.service.getProfile(req.user.id);
-  }
-
-  @Get('appointments')
-  getAppointments(@Req() req) {
-    return this.service.getAppointments(req.user.id);
-  }
-
-  @Get('visits')
-  getVisits(@Req() req) {
-    return this.service.getVisits(req.user.id);
+  @Get('me')
+  async me(@Req() req) {
+    return this.patients.getByUserId(req.user.sub);
   }
 }
