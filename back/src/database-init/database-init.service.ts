@@ -16,7 +16,45 @@ export class DatabaseInitService implements OnModuleInit {
 
     console.log('--- Создаём тестовые данные... ---');
 
-    // 1. Создаём пользователей-докторов
+    // ---------------------------------------------------------
+    // 1. Создаём АДМИНА
+    // ---------------------------------------------------------
+    const admin = await this.prisma.user.create({
+      data: {
+        username: 'admin',
+        email: 'admin@mail.com',
+        passwordHash: await bcrypt.hash('admin123', 10),
+        role: 'ADMIN',
+      },
+    });
+
+    console.log('Админ создан:', admin.email);
+
+    // ---------------------------------------------------------
+    // 2. Создаём обычных пользователей (пациентов)
+    // ---------------------------------------------------------
+    const patientUsers = await this.prisma.user.createManyAndReturn({
+      data: [
+        {
+          username: 'user1',
+          email: 'user1@mail.com',
+          passwordHash: await bcrypt.hash('123456', 10),
+          role: 'PATIENT',
+        },
+        {
+          username: 'user2',
+          email: 'user2@mail.com',
+          passwordHash: await bcrypt.hash('123456', 10),
+          role: 'PATIENT',
+        },
+      ],
+    });
+
+    console.log('Пациенты созданы:', patientUsers.length);
+
+    // ---------------------------------------------------------
+    // 3. Создаём пользователей-докторов
+    // ---------------------------------------------------------
     const doctorUsers = await this.prisma.user.createManyAndReturn({
       data: [
         {
@@ -40,7 +78,11 @@ export class DatabaseInitService implements OnModuleInit {
       ],
     });
 
-    // 2. Создаём кабинеты (минимально)
+    console.log('Доктора-пользователи созданы:', doctorUsers.length);
+
+    // ---------------------------------------------------------
+    // 4. Создаём кабинеты
+    // ---------------------------------------------------------
     const cabinets = await this.prisma.cabinet.createManyAndReturn({
       data: [
         {
@@ -64,13 +106,18 @@ export class DatabaseInitService implements OnModuleInit {
       ],
     });
 
-    // 3. Создаём профили докторов
+    console.log('Кабинеты созданы:', cabinets.length);
+
+    // ---------------------------------------------------------
+    // 5. Создаём профили докторов (с отчествами!)
+    // ---------------------------------------------------------
     await this.prisma.doctor.createMany({
       data: [
         {
           userId: doctorUsers[0].id,
           firstName: 'Иван',
           lastName: 'Иванов',
+          middleName: 'Иванович',
           specialization: 'Терапевт',
           isTherapist: true,
           cabinetId: cabinets[0].id,
@@ -79,6 +126,7 @@ export class DatabaseInitService implements OnModuleInit {
           userId: doctorUsers[1].id,
           firstName: 'Пётр',
           lastName: 'Петров',
+          middleName: 'Петрович',
           specialization: 'Хирург',
           isTherapist: false,
           cabinetId: cabinets[1].id,
@@ -87,6 +135,7 @@ export class DatabaseInitService implements OnModuleInit {
           userId: doctorUsers[2].id,
           firstName: 'Сергей',
           lastName: 'Сергеев',
+          middleName: 'Сергеевич',
           specialization: 'Кардиолог',
           isTherapist: false,
           cabinetId: cabinets[2].id,
@@ -94,9 +143,8 @@ export class DatabaseInitService implements OnModuleInit {
       ],
     });
 
-    console.log('--- Тестовые данные созданы! ---');
+    console.log('Профили докторов созданы');
 
-    const totalUsers = await this.prisma.user.count();
-    console.log('Пользователей в базе:', totalUsers);
+    console.log('--- Тестовые данные созданы! ---');
   }
 }

@@ -30,13 +30,14 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async loadMe() {
-      if (!this.accessToken) return
+     if (!this.accessToken) return
 
       try {
-        const res = await api.get('/auth/me')
-        this.user = res.data
+       const res = await api.get('/auth/me')
+       this.user = res.data
       } catch {
-        this.forceLocalLogout()
+       // НЕ надо разлогинивать — токена может просто не быть
+       this.user = null
       }
     },
 

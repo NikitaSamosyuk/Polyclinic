@@ -5,6 +5,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  Body,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -14,6 +16,26 @@ import { extname } from 'path';
 @Controller('doctors')
 export class DoctorsController {
   constructor(private doctors: DoctorsService) {}
+
+  @Get()
+  async getAllDoctors() {
+    const doctors = await this.doctors.getAll();
+
+    return doctors.map((d) => ({
+      id: d.id,
+      userId: d.userId,
+
+      firstName: d.firstName,
+      lastName: d.lastName,
+      middleName: d.middleName,
+      specialization: d.specialization,
+      isTherapist: d.isTherapist,
+
+      cabinetNumber: d.cabinet?.number || null,
+
+      photoUrl: d.photoUrl || '/uploads/defaults/doctor.png',
+    }));
+  }
 
   @Get('photo')
   async getPhoto(@Req() req) {
@@ -36,10 +58,26 @@ export class DoctorsController {
       }),
     }),
   )
-  async uploadPhoto(@UploadedFile() file, @Req() req) {
+  async uploadPhoto(
+    @UploadedFile() file,
+    @Req() req,
+    @Body('userId') userId?: number,
+  ) {
+    const actor = req.user;
+
+    // DOCTOR → может менять только своё фото
+    if (actor.role === 'DOCTOR') {
+      userId = actor.sub;
+    }
+
+    // ADMIN → может менять фото любого врача
+    if (actor.role === 'ADMIN') {
+      if (!userId) throw new ForbiddenException('userId is required for admin');
+    }
+
     const url = `/uploads/doctors/${file.filename}`;
 
-    await this.doctors.updatePhoto(req.user.sub, url);
+    await this.doctors.updatePhoto(userId, url);
 
     return { photoUrl: url };
   }

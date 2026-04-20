@@ -1,35 +1,26 @@
-import { Module, OnApplicationBootstrap } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { PrismaService } from './prisma/prisma.service';
-import { UsersModule } from './users/users.module';
+import { Module, MiddlewareConsumer } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { RedisModule } from './redis/redis.module';
-import { DatabaseInitModule } from './database-init/database-init.module';
-import { PatientsModule } from './patients/patients.module';
+import { UsersModule } from './users/users.module';
 import { DoctorsModule } from './doctors/doctors.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
+import { AccessLoggerMiddleware } from './auth/middleware/access-logger.middleware';
+import { CombinedAuthGuard } from './auth/guards/combined-auth.guard';
+import { DatabaseInitService } from './database-init/database-init.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    UsersModule,
-    AuthModule,
-    PatientsModule,
-    DoctorsModule, // 🔥 добавлено
-    RedisModule,
-    DatabaseInitModule,
+  imports: [PrismaModule, RedisModule, AuthModule, UsersModule, DoctorsModule],
+  controllers: [AppController],
+  providers: [
+    AppService,
+    CombinedAuthGuard, // ← ОБЯЗАТЕЛЬНО
+    DatabaseInitService,
   ],
 })
-export class AppModule implements OnApplicationBootstrap {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async onApplicationBootstrap() {
-    try {
-      const count = await this.prisma.user.count();
-      console.log('--- ✅ PRISMA ПРОВЕРКА УСПЕШНА ---');
-      console.log(`Пользователей в базе: ${count}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      console.error('--- ❌ ОШИБКА PRISMA ---', msg);
-    }
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AccessLoggerMiddleware).forRoutes('*');
   }
 }

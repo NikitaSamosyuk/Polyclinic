@@ -1,12 +1,10 @@
 import { Controller, Post, Body, Res, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
 
-  @Public()
   @Post('register')
   async register(@Body() dto, @Res({ passthrough: true }) res) {
     const tokens = await this.auth.register(dto);
@@ -14,13 +12,12 @@ export class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
-      path: '/', // ✔ фикс
+      path: '/',
     });
 
     return { accessToken: tokens.accessToken };
   }
 
-  @Public()
   @Post('login')
   async login(@Body() dto, @Res({ passthrough: true }) res) {
     const tokens = await this.auth.login(dto);
@@ -28,13 +25,12 @@ export class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
-      path: '/', // ✔ фикс
+      path: '/',
     });
 
     return { accessToken: tokens.accessToken };
   }
 
-  @Public()
   @Post('refresh')
   async refresh(@Req() req, @Res({ passthrough: true }) res) {
     const token = req.cookies?.refreshToken;
@@ -46,7 +42,7 @@ export class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
-      path: '/', // ✔ фикс
+      path: '/',
     });
 
     return { accessToken: tokens.accessToken };
@@ -62,7 +58,7 @@ export class AuthController {
     await this.auth.logout(req.user.sub);
 
     res.clearCookie('refreshToken', {
-      path: '/', // ✔ фикс
+      path: '/',
     });
 
     return { success: true };

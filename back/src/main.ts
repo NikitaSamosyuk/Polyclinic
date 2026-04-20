@@ -1,4 +1,4 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
@@ -19,7 +19,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // 🔥 ПРАВИЛЬНАЯ раздача статики
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
@@ -32,8 +31,8 @@ async function bootstrap() {
     }),
   );
 
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new CombinedAuthGuard(reflector));
+  // ✔ Правильное подключение guard
+  app.useGlobalGuards(app.get(CombinedAuthGuard));
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 

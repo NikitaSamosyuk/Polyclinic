@@ -15,4 +15,12 @@ export class DoctorsService {
       data: { photoUrl },
     });
   }
+
+  async getAll() {
+    return this.prisma.doctor.findMany({
+      include: {
+        cabinet: true,
+      },
+    });
+  }
 }
