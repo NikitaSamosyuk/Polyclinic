@@ -6,7 +6,6 @@ import { PrismaPg } from '@prisma/adapter-pg';
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private client: any;
 
-  // Проксируем ВСЕ модели Prisma
   public user: any;
   public patient: any;
   public doctor: any;
@@ -14,6 +13,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public appointment: any;
   public visit: any;
   public attachedFile: any;
+
+  public doctorShift: any; // ← ДОБАВЛЕНО
+  public therapistAddressZone: any; // ← ДОБАВЛЕНО
 
   constructor() {
     const pool = new Pool({
@@ -26,7 +28,6 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
     this.client = new PrismaClient({ adapter });
 
-    // Проксируем модели
     this.user = this.client.user;
     this.patient = this.client.patient;
     this.doctor = this.client.doctor;
@@ -34,6 +35,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.appointment = this.client.appointment;
     this.visit = this.client.visit;
     this.attachedFile = this.client.attachedFile;
+
+    this.doctorShift = this.client.doctorShift; // ← ДОБАВЛЕНО
+    this.therapistAddressZone = this.client.therapistAddressZone; // ← ДОБАВЛЕНО
   }
 
   $transaction(...args: any[]) {

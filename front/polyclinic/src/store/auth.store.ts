@@ -10,7 +10,7 @@ export interface User {
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    accessToken: localStorage.getItem('accessToken') as string | null,
+    accessToken: (localStorage.getItem('accessToken') as string) || null,
     user: null as User | null,
   }),
 
@@ -18,26 +18,25 @@ export const useAuthStore = defineStore('auth', {
     async login(email: string, password: string) {
       const res = await api.post('/auth/login', { email, password })
       this.accessToken = res.data.accessToken
-      localStorage.setItem('accessToken', this.accessToken)
+      localStorage.setItem('accessToken', this.accessToken as string)
       await this.loadMe()
     },
 
     async register(username: string, email: string, password: string) {
       const res = await api.post('/auth/register', { username, email, password })
       this.accessToken = res.data.accessToken
-      localStorage.setItem('accessToken', this.accessToken)
+      localStorage.setItem('accessToken', this.accessToken as string)
       await this.loadMe()
     },
 
     async loadMe() {
-     if (!this.accessToken) return
+      if (!this.accessToken) return
 
       try {
-       const res = await api.get('/auth/me')
-       this.user = res.data
+        const res = await api.get('/auth/me')
+        this.user = res.data
       } catch {
-       // НЕ надо разлогинивать — токена может просто не быть
-       this.user = null
+        this.user = null
       }
     },
 

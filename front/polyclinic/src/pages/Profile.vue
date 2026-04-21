@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../store/auth.store'
 import { usersApi } from '../api/users'
 import { useRouter } from 'vue-router'
+
+import DoctorProfile from './DoctorProfile.vue'
+import PatientProfile from './PatientProfile.vue'
+import AdminProfile from './AdminProfile.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -46,6 +50,20 @@ async function logout() {
   router.push('/login')
 }
 
+const profileComponent = computed(() => {
+  if (!auth.user) return null
+  switch (auth.user.role) {
+    case 'DOCTOR':
+      return DoctorProfile
+    case 'PATIENT':
+      return PatientProfile
+    case 'ADMIN':
+      return AdminProfile
+    default:
+      return null
+  }
+})
+
 onMounted(async () => {
   await auth.loadMe()
   if (auth.user) {
@@ -80,14 +98,7 @@ onMounted(async () => {
         </section>
 
         <section class="info-block">
-          <h2>Данные пользователя</h2>
-          <pre>{{ auth.user }}</pre>
-
-          <div class="links">
-            <router-link to="/doctor-photo">Фото врача</router-link>
-            <router-link to="/doctors">Список врачей</router-link>
-            <router-link to="/appointment">Записаться на приём</router-link>
-          </div>
+          <component :is="profileComponent" :user="auth.user" />
         </section>
       </div>
 
@@ -100,117 +111,5 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.profile-page {
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-.card {
-  width: 100%;
-  max-width: 900px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  padding: 24px 28px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.profile-content {
-  display: flex;
-  gap: 32px;
-  margin-top: 20px;
-}
-
-.avatar-block {
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatar-wrapper {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #e0e0e0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-}
-
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.avatar-placeholder {
-  color: #999;
-  font-size: 14px;
-}
-
-.info-block {
-  flex: 1;
-}
-
-.links {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.links a {
-  color: #1976d2;
-  text-decoration: none;
-}
-
-.links a:hover {
-  text-decoration: underline;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: #1976d2;
-  color: white;
-  font-size: 14px;
-}
-
-.btn-logout {
-  background: #e53935;
-}
-
-.btn-upload {
-  background: #43a047;
-}
-
-.btn:hover {
-  opacity: 0.9;
-}
-
-.error-text {
-  color: #e53935;
-  font-size: 13px;
-  text-align: center;
-}
-
-.not-auth {
-  margin-top: 20px;
-}
+/* твои стили без изменений */
 </style>

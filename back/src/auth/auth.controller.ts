@@ -1,9 +1,13 @@
 import { Controller, Post, Body, Res, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private users: UsersService,
+  ) {}
 
   @Post('register')
   async register(@Body() dto, @Res({ passthrough: true }) res) {
@@ -50,7 +54,16 @@ export class AuthController {
 
   @Get('me')
   async me(@Req() req) {
-    return req.user;
+    // CombinedAuthGuard уже проверил токен и положил payload в req.user
+    const user = await this.users.getById(req.user.sub);
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+    };
   }
 
   @Post('logout')

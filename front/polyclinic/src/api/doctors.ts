@@ -1,15 +1,13 @@
 import api from './axios'
 
 export const doctorsApi = {
-  getPhoto: () => api.get('/doctors/photo'),
+  async getByUserId(userId: number) {
+    const res = await api.get(`/doctors/user/${userId}`)
+    return res.data
+  },
 
-  uploadPhoto: (file: File) => {
-    const form = new FormData()
-    // имя поля должно совпадать с FileInterceptor('photo') на бэке
-    form.append('photo', file)
-
-    return api.post('/doctors/photo', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+  async getAll() {
+    const res = await api.get('/doctors')
+    return res.data
   },
 }

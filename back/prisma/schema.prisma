@@ -60,7 +60,7 @@ model Doctor {
   phone          String?
   createdAt      DateTime @default(now())
 
-  photoUrl       String?   // 🔥 ДОБАВЛЕНО — фото доктора
+  photoUrl       String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -73,8 +73,21 @@ model Doctor {
   visits       Visit[]
 
   addressZones TherapistAddressZone[]
+  shifts       DoctorShift[]   // ← ДОБАВЛЕНО
 }
 
+model DoctorShift {
+  id        Int      @id @default(autoincrement())
+  doctorId  Int
+  cabinetId Int
+  date      DateTime
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  cabinet Cabinet @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+}
 
 model TherapistAddressZone {
   id        Int    @id @default(autoincrement())
@@ -84,20 +97,21 @@ model TherapistAddressZone {
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
 
+
 model Cabinet {
   id                Int      @id @default(autoincrement())
   number            String   @unique
   floor             Int?
-  specialization    String   // кабинет принимает только врачей этой специальности
+  specialization    String
   workingHoursStart String
   workingHoursEnd   String
+  slotDuration      Int      @default(30)   // ← ДОБАВЛЕНО
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
 
-  // до 2 врачей
   doctors Doctor[]
-
   appointments Appointment[]
+  shifts DoctorShift[]       // ← ДОБАВЛЕНО
 }
 
 model Appointment {

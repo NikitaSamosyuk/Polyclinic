@@ -7,6 +7,7 @@ import {
   Req,
   Body,
   ForbiddenException,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -31,10 +32,16 @@ export class DoctorsController {
       specialization: d.specialization,
       isTherapist: d.isTherapist,
 
+      cabinetId: d.cabinetId,
       cabinetNumber: d.cabinet?.number || null,
 
       photoUrl: d.photoUrl || '/uploads/defaults/doctor.png',
     }));
+  }
+
+  @Get('user/:userId')
+  async getByUserId(@Param('userId') userId: string) {
+    return this.doctors.getByUserId(Number(userId));
   }
 
   @Get('photo')
@@ -65,12 +72,10 @@ export class DoctorsController {
   ) {
     const actor = req.user;
 
-    // DOCTOR → может менять только своё фото
     if (actor.role === 'DOCTOR') {
       userId = actor.sub;
     }
 
-    // ADMIN → может менять фото любого врача
     if (actor.role === 'ADMIN') {
       if (!userId) throw new ForbiddenException('userId is required for admin');
     }
