@@ -16,6 +16,8 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   // --- USERS ---
   'GET /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'POST /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'PATCH /users': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'PATCH /users/password': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- PATIENTS ---
   'GET /patients/me': ['PATIENT'],

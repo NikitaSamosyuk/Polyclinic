@@ -1,41 +1,82 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+// src/router/index.ts
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/store/auth.store'
 
-import Home from '../pages/Home.vue'
-import Login from '../pages/Login.vue'
-import Register from '../pages/Register.vue'
-import Profile from '../pages/Profile.vue'
-import Doctors from '../pages/Doctors.vue'
-import Appointment from '../pages/Appointment.vue'
-import Patients from '../pages/Patients.vue'
-import MyAppointments from '../pages/MyAppointments.vue'
-import DoctorAppointments from '../pages/DoctorAppointments.vue'
-import DoctorProfile from '../pages/DoctorProfile.vue'
-import PatientCard from '../components/PatientCard.vue'
+const Home = () => import('@/pages/Home.vue')
+const Authorization = () => import('@/pages/Login/Authorization.vue')
+const Registration = () => import('@/pages/Login/Registration.vue')
+const Profile = () => import('@/pages/Profile.vue')
 
-const routes: RouteRecordRaw[] = [
+const Doctors = () => import('@/pages/Doctors.vue')
+const Patients = () => import('@/pages/Patients.vue')
+const PatientCard = () => import('@/components/PatientCard.vue')
+const Appointment = () => import('@/pages/Appointment.vue')
+const MyAppointments = () => import('@/pages/MyAppointments.vue')
+const DoctorAppointments = () => import('@/pages/DoctorAppointments.vue')
+
+const DoctorProfile = () => import('@/pages/Profile/DoctorProfile.vue')
+const PatientProfile = () => import('@/pages/Profile/PatientProfile.vue')
+const AdminProfile = () => import('@/pages/Profile/AdminProfile.vue')
+
+const routes = [
   { path: '/', name: 'Home', component: Home },
-  { path: '/login', name: 'Login', component: Login },
-  { path: '/register', name: 'Register', component: Register },
-  { path: '/profile', name: 'Profile', component: Profile },
+
+  { path: '/auth', name: 'Authorization', component: Authorization },
+  { path: '/register', name: 'Registration', component: Registration },
+
+  { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
+  { path: '/my-appointments', name: 'MyAppointments', component: MyAppointments, meta: { requiresAuth: true } },
+
   { path: '/doctors', name: 'Doctors', component: Doctors },
   { path: '/patients', name: 'Patients', component: Patients },
+  { path: '/patients/:id', name: 'PatientCard', component: PatientCard, props: true },
+
   { path: '/appointment', name: 'Appointment', component: Appointment },
-  { path: '/my-appointments', name: 'MyAppointments', component: MyAppointments },
 
-  // Doctor routes
-  { path: '/doctor/profile', name: 'DoctorProfile', component: DoctorProfile },
-  { path: '/doctor/:id/appointments', name: 'DoctorAppointments', component: DoctorAppointments },
+  { path: '/doctor/:id/appointments', name: 'DoctorAppointments', component: DoctorAppointments, meta: { requiresAuth: true } },
 
-  // Patient card (компонент сам загружает данные по params.id, если проп не передан)
-  { path: '/patients/:id', name: 'PatientCard', component: PatientCard },
+  { path: '/doctor/profile', name: 'DoctorProfile', component: DoctorProfile, meta: { requiresAuth: true } },
+  { path: '/patient/profile', name: 'PatientProfile', component: PatientProfile, meta: { requiresAuth: true } },
+  { path: '/admin/profile', name: 'AdminProfile', component: AdminProfile, meta: { requiresAuth: true } },
 
-  // catch-all
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: Home },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  const token = localStorage.getItem('accessToken')
+
+  // 🔥 ждём loadMe()
+  if (!auth.ready) {
+    if (token) await auth.loadMe()
+    else {
+      auth.user = null
+      auth.ready = true
+    }
+  }
+
+  const isLoggedIn = !!localStorage.getItem('accessToken')
+
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    return { name: 'Authorization' }
+  }
+
+  if (isLoggedIn && !auth.user) {
+    localStorage.removeItem('accessToken')
+    auth.accessToken = null
+    return { name: 'Authorization' }
+  }
+
+  if (isLoggedIn && (to.name === 'Authorization' || to.name === 'Registration')) {
+    return { name: 'Profile' }
+  }
+
+  return true
 })
 
 export default router

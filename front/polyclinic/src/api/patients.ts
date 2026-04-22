@@ -2,25 +2,20 @@
 import api from './axios'
 
 export const patientsApi = {
-  async getAll() {
+  async getByUserId(userId: number) {
     try {
-      const res = await api.get('/patients')
-      console.log('[API] GET /patients', res.status, res.data)
+      const res = await api.get(`/patients/user/${userId}`)
       return res.data
-    } catch (err) {
-      console.error('[API] GET /patients error', err?.response?.status, err?.response?.data)
+    } catch (err: any) {
+      // Если 404 — возвращаем null (пациент не создан)
+      if (err?.response?.status === 404) {
+        console.warn(`[API] GET /patients/user/${userId} 404 -> returning null`)
+        return null
+      }
+      // Для остальных ошибок пробрасываем дальше
       throw err
     }
   },
 
-  async getByUserId(userId: number) {
-    try {
-      const res = await api.get(`/patients/user/${userId}`)
-      console.log('[API] GET /patients/user/:userId', `/patients/user/${userId}`, res.status, res.data)
-      return res.data
-    } catch (err) {
-      console.error('[API] GET /patients/user/:userId error', `/patients/user/${userId}`, err?.response?.status, err?.response?.data)
-      throw err
-    }
-  },
+  // другие методы...
 }

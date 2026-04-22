@@ -1,5 +1,7 @@
+// src/store/auth.store.ts
 import { defineStore } from 'pinia'
-import api from '../api/axios'
+import { authApi } from '@/api/auth'
+import { markLoggedOut } from '@/api/axios'
 
 export interface User {
   id: number
@@ -10,45 +12,66 @@ export interface User {
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    accessToken: (localStorage.getItem('accessToken') as string) || null,
+    accessToken: localStorage.getItem('accessToken') || null,
     user: null as User | null,
+    ready: false,
   }),
 
   actions: {
     async login(email: string, password: string) {
-      const res = await api.post('/auth/login', { email, password })
-      this.accessToken = res.data.accessToken
-      localStorage.setItem('accessToken', this.accessToken as string)
-      await this.loadMe()
+      try {
+        const res = await authApi.login(email, password)
+        const access = res.accessToken
+        this.accessToken = access
+        localStorage.setItem('accessToken', access)
+        await this.loadMe()
+        return true
+      } catch {
+        return false
+      }
     },
 
     async register(username: string, email: string, password: string) {
-      const res = await api.post('/auth/register', { username, email, password })
-      this.accessToken = res.data.accessToken
-      localStorage.setItem('accessToken', this.accessToken as string)
+      const res = await authApi.register(username, email, password)
+      const access = res.accessToken
+      this.accessToken = access
+      localStorage.setItem('accessToken', access)
       await this.loadMe()
     },
 
     async loadMe() {
-      if (!this.accessToken) return
-
+      if (!this.accessToken) {
+        this.user = null
+        this.ready = true
+        return
+      }
       try {
-        const res = await api.get('/auth/me')
-        this.user = res.data
+        const res = await authApi.me()
+        this.user = res
       } catch {
         this.user = null
       }
-    },
-
-    forceLocalLogout() {
-      this.accessToken = null
-      this.user = null
-      localStorage.removeItem('accessToken')
+      this.ready = true
     },
 
     async logout() {
-      this.forceLocalLogout()
-      api.post('/auth/logout').catch(() => {})
+      // 🔥 1. СНАЧАЛА говорим backend'у «разлогинь»
+      try {
+        await authApi.logout() // тут ещё есть Authorization, backend знает user.sub и чистит refresh в Redis
+      } catch {
+        // даже если тут 401/500 — всё равно выходим локально
+      }
+
+      // 🔥 2. Больше НИКОГДА не рефрешим токен в этом сеансе
+      markLoggedOut()
+
+      // 🔥 3. Чистим токен и юзера на фронте
+      localStorage.removeItem('accessToken')
+      this.accessToken = null
+      this.user = null
+
+      // 🔥 4. Жёсткий redirect (обнуляет всё состояние)
+      window.location.href = '/'
     },
   },
 })

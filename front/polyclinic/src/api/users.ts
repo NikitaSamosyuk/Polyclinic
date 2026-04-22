@@ -1,19 +1,25 @@
+// src/api/users.ts
 import api from './axios'
 
 export const usersApi = {
-  // аватар профиля
   getAvatar: () => api.get('/users/avatar'),
 
   uploadAvatar: (file: File) => {
     const form = new FormData()
-    // имя поля должно совпадать с FileInterceptor('avatar') на бэке
     form.append('avatar', file)
-
     return api.post('/users/avatar', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
 
-  // пациент "я"
+  updateProfile: (payload: { username?: string; email?: string }) => {
+    return api.patch('/users', payload)
+  },
+
+  // ✔ отправляем оба поля, как требует backend
+  changePassword: (payload: { currentPassword: string; newPassword: string }) => {
+    return api.patch('/users/password', payload)
+  },
+
   getMePatient: () => api.get('/patients/me'),
 }

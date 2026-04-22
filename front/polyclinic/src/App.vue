@@ -1,13 +1,12 @@
-<script setup>
-import MainMenu from './components/MainMenu.vue'
-import Footer from './components/Footer.vue'
-</script>
-
 <template>
-  <div class="layout">
+  <div class="min-h-screen flex flex-col">
     <MainMenu />
 
-    <main class="content">
+    <div class="test-tailwind">
+      <div class="bg-red-500 text-white px-4 py-2 rounded">Tailwind OK</div>
+    </div>
+
+    <main class="flex-1 w-[80%] max-w-5xl mx-auto px-4 py-6">
       <router-view />
     </main>
 
@@ -15,15 +14,7 @@ import Footer from './components/Footer.vue'
   </div>
 </template>
 
-<style>
-.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.content {
-  flex: 1;
-  padding: 20px;
-}
-</style>
+<script setup>
+import MainMenu from './components/MainMenu.vue'
+import Footer from './components/Footer.vue'
+</script>
