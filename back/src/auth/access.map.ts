@@ -3,15 +3,20 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /auth/login': 'PUBLIC',
   'POST /auth/register': 'PUBLIC',
   'POST /auth/refresh': 'PUBLIC',
-
   'GET /auth/me': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'POST /auth/logout': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- DOCTORS ---
-  'GET /doctors': 'PUBLIC',
-  'GET /doctors/photo': ['DOCTOR'],
-  'POST /doctors/photo': ['DOCTOR', 'ADMIN'],
-  'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'GET /doctors': 'PUBLIC', // публичный список врачей
+  'GET /doctors/:id': 'PUBLIC', // публичная карточка врача
+  'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'], // врач по userId
+  'GET /doctors/photo': ['DOCTOR'], // фото врача
+  'POST /doctors/photo': ['DOCTOR', 'ADMIN'], // загрузка фото
+  'POST /doctors': ['ADMIN'], // создание врача
+  'PATCH /doctors/:id': ['ADMIN'], // обновление врача
+  'DELETE /doctors/:id': ['ADMIN'], // деактивация врача
+  'GET /doctors/:id/patients': ['DOCTOR', 'ADMIN'], // пациенты врача
+  'GET /doctors/:id/zones': ['DOCTOR', 'ADMIN'], // зоны терапевта
 
   // --- USERS ---
   'GET /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
@@ -20,9 +25,13 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'PATCH /users/password': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- PATIENTS ---
+  'POST /patients/register': ['PATIENT'],
   'GET /patients/me': ['PATIENT'],
   'GET /patients': ['DOCTOR', 'ADMIN'],
-  'GET /patients/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'GET /patients/:id': ['DOCTOR', 'ADMIN'],
+  'PATCH /patients/:id': ['PATIENT', 'ADMIN'],
+  'DELETE /patients/:id': ['ADMIN'],
+  'GET /patients/search/query': ['DOCTOR', 'ADMIN'],
 
   // --- CABINETS ---
   'GET /cabinets': 'PUBLIC',

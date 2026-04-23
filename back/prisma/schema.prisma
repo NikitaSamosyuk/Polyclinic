@@ -30,13 +30,20 @@ model User {
 model Patient {
   id                 Int      @id @default(autoincrement())
   userId             Int      @unique
+
   lastName           String
   firstName          String
   middleName         String?
   birthDate          DateTime
   gender             String?
   phone              String?
-  address            String?
+
+  region             String      // область
+  city               String      // город
+  street             String      // улица
+  houseNumber        String      // дом
+  apartment          String?     // квартира
+
   medicalCardNumber  String?  @unique
   primaryTherapistId Int?
   createdAt          DateTime @default(now())
@@ -48,6 +55,7 @@ model Patient {
   appointments Appointment[]
   visits       Visit[]
 }
+
 
 model Doctor {
   id             Int      @id @default(autoincrement())
@@ -92,10 +100,12 @@ model DoctorShift {
 model TherapistAddressZone {
   id        Int    @id @default(autoincrement())
   doctorId  Int
-  zone      String
+
+  street    String   // улица Минска
 
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 }
+
 
 
 model Cabinet {

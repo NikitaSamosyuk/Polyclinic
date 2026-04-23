@@ -57,11 +57,9 @@ export class DatabaseInitService implements OnModuleInit {
     });
 
     const doctorUsers = await this.prisma.user.findMany({
-      where: { username: { in: ['doc1', 'doc2', 'doc3'] } },
+      where: { role: 'DOCTOR' },
       orderBy: { id: 'asc' },
     });
-
-    console.log('Доктора-пользователи созданы:', doctorUsers.length);
 
     // ---------------------------------------------------------
     // 3. Кабинеты
@@ -95,8 +93,6 @@ export class DatabaseInitService implements OnModuleInit {
     const cabinets = await this.prisma.cabinet.findMany({
       orderBy: { id: 'asc' },
     });
-
-    console.log('Кабинеты созданы:', cabinets.length);
 
     // ---------------------------------------------------------
     // 4. Профили докторов
@@ -140,10 +136,8 @@ export class DatabaseInitService implements OnModuleInit {
       orderBy: { id: 'asc' },
     });
 
-    console.log('Профили докторов созданы');
-
     // ---------------------------------------------------------
-    // 5. Смены докторов (DoctorShift)
+    // 5. Смены докторов
     // ---------------------------------------------------------
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -177,25 +171,16 @@ export class DatabaseInitService implements OnModuleInit {
       ],
     });
 
-    console.log('Смены докторов созданы');
-
     // ---------------------------------------------------------
-    // 6. Адресные зоны терапевта
+    // 6. Адресные зоны терапевта (только улицы Минска)
     // ---------------------------------------------------------
     await this.prisma.therapistAddressZone.createMany({
       data: [
-        {
-          doctorId: doctorProfiles[0].id,
-          zone: 'Ленина',
-        },
-        {
-          doctorId: doctorProfiles[0].id,
-          zone: 'Победы',
-        },
+        { doctorId: doctorProfiles[0].id, street: 'Ленина' },
+        { doctorId: doctorProfiles[0].id, street: 'Победы' },
+        { doctorId: doctorProfiles[0].id, street: 'Гагарина' },
       ],
     });
-
-    console.log('Адресные зоны терапевта созданы');
 
     // ---------------------------------------------------------
     // 7. Пациенты (User)
@@ -218,102 +203,59 @@ export class DatabaseInitService implements OnModuleInit {
     });
 
     const patientUsers = await this.prisma.user.findMany({
-      where: { username: { in: ['user1', 'user2'] } },
-      orderBy: { id: 'asc' },
-    });
-
-    console.log('Пациенты созданы:', patientUsers.length);
-
-    // ---------------------------------------------------------
-    // 8. Профили пациентов
-    // ---------------------------------------------------------
-    await this.prisma.patient.createMany({
-      data: [
-        {
-          userId: patientUsers[0].id,
-          firstName: 'Алексей',
-          lastName: 'Смирнов',
-          middleName: 'Игоревич',
-          birthDate: new Date('1990-05-12'),
-          gender: 'male',
-          phone: '+79991234567',
-          address: 'ул. Ленина, 10',
-          medicalCardNumber: 'MC-001',
-          primaryTherapistId: doctorProfiles[0].id,
-        },
-        {
-          userId: patientUsers[1].id,
-          firstName: 'Мария',
-          lastName: 'Кузнецова',
-          middleName: 'Андреевна',
-          birthDate: new Date('1985-11-03'),
-          gender: 'female',
-          phone: '+79997654321',
-          address: 'ул. Победы, 5',
-          medicalCardNumber: 'MC-002',
-          primaryTherapistId: doctorProfiles[0].id,
-        },
-      ],
-    });
-
-    console.log('Профили пациентов созданы');
-
-    // Получаем реальные patient профили (нужны id для FK)
-    const patientProfiles = await this.prisma.patient.findMany({
+      where: { role: 'PATIENT' },
       orderBy: { id: 'asc' },
     });
 
     // ---------------------------------------------------------
-    // 9. Тестовые записи (Appointments)
+    // 8. Профили пациентов (новая структура адреса)
     // ---------------------------------------------------------
-    await this.prisma.appointment.createMany({
-      data: [
-        {
-          patientId: patientProfiles[0].id,
-          doctorId: doctorProfiles[0].id,
-          cabinetId: cabinets[0].id,
-          appointmentDate: today,
-          startTime: new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            10,
-            0,
-          ),
-          endTime: new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            10,
-            30,
-          ),
-          reason: 'Первичный осмотр',
-        },
-        {
-          patientId: patientProfiles[1].id,
-          doctorId: doctorProfiles[0].id,
-          cabinetId: cabinets[0].id,
-          appointmentDate: today,
-          startTime: new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            11,
-            0,
-          ),
-          endTime: new Date(
-            today.getFullYear(),
-            today.getMonth(),
-            today.getDate(),
-            11,
-            30,
-          ),
-          reason: 'Повторный приём',
-        },
-      ],
+
+    // user1 — Минск → назначаем терапевта по улице
+    await this.prisma.patient.create({
+      data: {
+        userId: patientUsers[0].id,
+        firstName: 'Алексей',
+        lastName: 'Смирнов',
+        middleName: 'Игоревич',
+        birthDate: new Date('1990-05-12'),
+        gender: 'male',
+        phone: '+375291234567',
+
+        region: 'Минская область',
+        city: 'Минск',
+        street: 'Ленина',
+        houseNumber: '10',
+        apartment: '15',
+
+        medicalCardNumber: 'MC-001',
+        primaryTherapistId: doctorProfiles[0].id,
+      },
     });
 
-    console.log('Тестовые записи созданы');
+    // user2 — НЕ Минск → назначаем самого незагруженного терапевта
+    const leastLoadedTherapist = doctorProfiles.find((d) => d.isTherapist);
+
+    await this.prisma.patient.create({
+      data: {
+        userId: patientUsers[1].id,
+        firstName: 'Мария',
+        lastName: 'Кузнецова',
+        middleName: 'Андреевна',
+        birthDate: new Date('1985-11-03'),
+        gender: 'female',
+        phone: '+375297654321',
+
+        region: 'Гродненская область',
+        city: 'Гродно',
+        street: 'Советская',
+        houseNumber: '5',
+        apartment: '8',
+
+        medicalCardNumber: 'MC-002',
+        primaryTherapistId: leastLoadedTherapist.id,
+      },
+    });
 
     console.log('--- Тестовые данные созданы! ---');
   }
