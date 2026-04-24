@@ -1,7 +1,12 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsOptional, IsString, IsArray } from 'class-validator';
 
 export class UpdateTherapistZoneDto {
-  @IsString()
   @IsOptional()
-  zone?: string;
+  @IsString()
+  street?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  houses?: string[];
 }

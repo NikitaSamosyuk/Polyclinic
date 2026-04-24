@@ -1,34 +1,40 @@
-<template>
-  <nav class="menu">
-    <router-link to="/">Главная</router-link>
-    <router-link to="/doctors">Врачи</router-link>
-    <router-link to="/patients">Пациенты</router-link>
-    <router-link to="/appointment">Запись</router-link>
-    <router-link to="/my-appointments">Мои записи</router-link>
-    <router-link to="/profile">Профиль</router-link>
-  </nav>
-</template>
-
 <script setup lang="ts">
-// Роль больше не проверяется на фронте — показываем ссылку на пациентов всегда.
-// Позже можно вернуть проверку, если потребуется.
+import { useAuthStore } from '@/store/auth.store'
+const auth = useAuthStore()
 </script>
 
-<style scoped>
-.menu {
-  display: flex;
-  gap: 20px;
-  padding: 15px 25px;
-  background: #1e1e1e;
-}
+<template>
+  <nav v-if="auth.ready" class="w-full bg-gray-900 px-6 py-4 shadow-md">
+    <ul class="flex items-center gap-6">
+      <li>
+        <router-link to="/" class="text-gray-200 hover:text-white">Главная</router-link>
+      </li>
 
-.menu a {
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-}
+      <li>
+        <router-link to="/doctors" class="text-gray-200 hover:text-white">Врачи</router-link>
+      </li>
 
-.menu a.router-link-active {
-  text-decoration: underline;
-}
-</style>
+      <li v-if="auth.user?.role === 'ADMIN' || auth.user?.role === 'DOCTOR'">
+        <router-link to="/patients" class="text-gray-200 hover:text-white">Пациенты</router-link>
+      </li>
+
+      <li v-if="auth.user?.role === 'ADMIN' || auth.user?.role === 'DOCTOR'">
+        <router-link to="/zones" class="text-gray-200 hover:text-white">Зоны</router-link>
+      </li>
+
+      <li>
+        <router-link to="/appointment" class="text-gray-200 hover:text-white">Запись</router-link>
+      </li>
+
+      <li v-if="auth.user">
+        <router-link to="/my-appointments" class="text-gray-200 hover:text-white"
+          >Мои записи</router-link
+        >
+      </li>
+
+      <li class="ml-auto">
+        <router-link to="/profile" class="text-gray-200 hover:text-white">Профиль</router-link>
+      </li>
+    </ul>
+  </nav>
+</template>

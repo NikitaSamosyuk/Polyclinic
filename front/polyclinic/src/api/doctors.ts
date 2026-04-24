@@ -10,4 +10,9 @@ export const doctorsApi = {
     const res = await api.get('/doctors')
     return res.data
   },
+
+  async getById(id: number) {
+    const res = await api.get(`/doctors/${id}`)
+    return res.data
+  },
 }

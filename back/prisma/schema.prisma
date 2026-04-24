@@ -56,7 +56,6 @@ model Patient {
   visits       Visit[]
 }
 
-
 model Doctor {
   id             Int      @id @default(autoincrement())
   userId         Int      @unique
@@ -81,7 +80,7 @@ model Doctor {
   visits       Visit[]
 
   addressZones TherapistAddressZone[]
-  shifts       DoctorShift[]   // ← ДОБАВЛЕНО
+  shifts       DoctorShift[]
 }
 
 model DoctorShift {
@@ -100,12 +99,11 @@ model DoctorShift {
 model TherapistAddressZone {
   id        Int    @id @default(autoincrement())
   doctorId  Int
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
 
-  street    String   // улица Минска
-
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  street    String
+  houses    String[]   // ["10", "12", "5-20"]
 }
-
 
 
 model Cabinet {
@@ -115,13 +113,13 @@ model Cabinet {
   specialization    String
   workingHoursStart String
   workingHoursEnd   String
-  slotDuration      Int      @default(30)   // ← ДОБАВЛЕНО
+  slotDuration      Int      @default(30)
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
 
-  doctors Doctor[]
+  doctors      Doctor[]
   appointments Appointment[]
-  shifts DoctorShift[]       // ← ДОБАВЛЕНО
+  shifts       DoctorShift[]
 }
 
 model Appointment {

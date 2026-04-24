@@ -13,7 +13,7 @@ const selectedSpecialization = ref('Специальность')
 const filterTherapist = ref(false)
 
 const currentPage = ref(1)
-const perPage = 10
+const perPage = 12
 
 async function load() {
   try {
@@ -41,15 +41,12 @@ const filteredDoctors = computed(() => {
   const q = searchQuery.value
 
   return doctors.value.filter((d) => {
-    // поиск ТОЛЬКО по ФИО
     const fullName = `${d.lastName} ${d.firstName} ${d.middleName || ''}`.toLowerCase()
 
     const matchesName = q ? fullName.includes(q) : true
-
     const matchesSpecialization =
       selectedSpecialization.value === 'Специальность' ||
       d.specialization === selectedSpecialization.value
-
     const matchesTherapist = filterTherapist.value ? d.isTherapist : true
 
     return matchesName && matchesSpecialization && matchesTherapist
@@ -67,12 +64,11 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-6">
+  <div class="max-w-7xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-4 text-gray-800">Врачи</h1>
 
-    <!-- ВЕРХНИЙ КОНТЕЙНЕР: ПОИСК + СПРАВА SELECT + ЧЕКБОКС -->
+    <!-- ВЕРХНИЙ КОНТЕЙНЕР -->
     <div class="flex flex-row justify-between items-start gap-4 mb-6">
-      <!-- ЛЕВАЯ ЧАСТЬ: ШИРОКИЙ ПОИСК -->
       <div class="relative flex-1">
         <input
           v-model="searchInput"
@@ -80,8 +76,6 @@ onMounted(load)
           class="w-full px-4 py-2 border rounded-lg"
           placeholder="Поиск по ФИО"
         />
-
-        <!-- Иконка поиска -->
         <button
           @click="applySearch"
           class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
@@ -90,9 +84,7 @@ onMounted(load)
         </button>
       </div>
 
-      <!-- ПРАВАЯ КОЛОНКА: SELECT + ЧЕКБОКС -->
       <div class="flex flex-col items-start">
-        <!-- Выпадающий список -->
         <select
           v-model="selectedSpecialization"
           @change="applySearch"
@@ -103,7 +95,6 @@ onMounted(load)
           </option>
         </select>
 
-        <!-- Чекбокс под select -->
         <label class="flex items-center gap-2 cursor-pointer mt-2">
           <input type="checkbox" v-model="filterTherapist" @change="applySearch" />
           <span class="text-gray-700">Только терапевты</span>
@@ -111,15 +102,16 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- Список -->
+    <!-- СПИСОК ВРАЧЕЙ -->
     <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
     <div v-else-if="error" class="text-red-600 text-lg">{{ error }}</div>
 
-    <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+    <!-- ВАЖНО: flex + wrap + фиксированные карточки -->
+    <div v-else class="flex flex-wrap gap-6 justify-center" style="align-items: flex-start">
       <DoctorCard v-for="d in paginatedDoctors" :key="d.id" :doctor="d" />
     </div>
 
-    <!-- Пагинация -->
+    <!-- ПАГИНАЦИЯ -->
     <div v-if="totalPages > 1" class="flex justify-center mt-6 gap-3">
       <button
         v-for="page in totalPages"

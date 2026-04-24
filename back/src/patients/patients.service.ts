@@ -7,10 +7,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterPatientDto } from './dto/register-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { TherapistZonesService } from '../therapist-zones/therapist-zones.service';
 
 @Injectable()
 export class PatientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly zones: TherapistZonesService,
+  ) {}
 
   // ============================================================
   // ВАЛИДАЦИИ
@@ -52,11 +56,9 @@ export class PatientsService {
 
     let r = raw.trim().toLowerCase();
 
-    // убираем "область", "обл", "обл."
     r = r.replace(/область$/i, '');
     r = r.replace(/обл\.?$/i, '');
 
-    // берём только первое слово
     const first = r.split(/\s+/)[0];
     if (!first) throw new BadRequestException('Некорректная область');
 
@@ -96,6 +98,62 @@ export class PatientsService {
   }
 
   // ============================================================
+  // НОРМАЛИЗАЦИЯ ПОЛА
+  // ============================================================
+
+  private normalizeGender(raw?: string): string | null {
+    if (!raw) return null;
+
+    const g = raw.trim().toUpperCase();
+
+    if (g !== 'MALE' && g !== 'FEMALE') {
+      throw new BadRequestException('Пол должен быть MALE или FEMALE');
+    }
+
+    return g;
+  }
+
+  // ============================================================
+  // НОРМАЛИЗАЦИЯ АДРЕСА
+  // ============================================================
+
+  private normalizeStreet(raw: string): string {
+    return raw.trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  private normalizeHouse(raw: string): string {
+    return raw.trim().toLowerCase();
+  }
+
+  // ============================================================
+  // АВТО-НАЗНАЧЕНИЕ ТЕРАПЕВТА
+  // ============================================================
+
+  private async autoAssignTherapist(region: string, city: string, street: string, house: string) {
+    const isMinsk =
+      region === 'Минская область' &&
+      city.trim().toLowerCase() === 'минск';
+
+    if (isMinsk) {
+      const zone = await this.zones.findTherapistByAddress(street, house);
+      if (zone) return zone.doctorId;
+    }
+
+    const therapists = await this.prisma.doctor.findMany({
+      where: { isTherapist: true },
+      include: { patients: true },
+    });
+
+    if (therapists.length === 0) {
+      throw new BadRequestException('Нет доступных терапевтов');
+    }
+
+    therapists.sort((a, b) => a.patients.length - b.patients.length);
+
+    return therapists[0].id;
+  }
+
+  // ============================================================
   // СОЗДАНИЕ ПАЦИЕНТА
   // ============================================================
 
@@ -115,43 +173,20 @@ export class PatientsService {
     const region = this.normalizeRegion(dto.region);
     const city = this.validateRussian(dto.city, 'Город');
     const street = this.validateRussian(dto.street, 'Улица');
-
     const houseNumber = this.validateDigits(dto.houseNumber, 'Номер дома');
     const apartment = dto.apartment
       ? this.validateDigits(dto.apartment, 'Квартира')
       : null;
 
-    // ============================================================
-    // АВТО-НАЗНАЧЕНИЕ ТЕРАПЕВТА
-    // ============================================================
+    const normalizedStreet = this.normalizeStreet(street);
+    const normalizedHouse = this.normalizeHouse(houseNumber);
 
-    let primaryTherapistId: number | null = null;
-
-    const isMinsk =
-      region === 'Минская область' &&
-      city.trim().toLowerCase() === 'минск';
-
-    if (isMinsk) {
-      const zone = await this.prisma.therapistAddressZone.findFirst({
-        where: { zone: street },
-      });
-
-      if (zone) primaryTherapistId = zone.doctorId;
-    }
-
-    if (!primaryTherapistId) {
-      const therapists = await this.prisma.doctor.findMany({
-        where: { isTherapist: true },
-        include: { patients: true },
-      });
-
-      if (therapists.length === 0) {
-        throw new BadRequestException('Нет доступных терапевтов');
-      }
-
-      therapists.sort((a, b) => a.patients.length - b.patients.length);
-      primaryTherapistId = therapists[0].id;
-    }
+    const primaryTherapistId = await this.autoAssignTherapist(
+      region,
+      city,
+      normalizedStreet,
+      normalizedHouse,
+    );
 
     return this.prisma.patient.create({
       data: {
@@ -160,7 +195,7 @@ export class PatientsService {
         lastName,
         middleName,
         birthDate,
-        gender: dto.gender,
+        gender: this.normalizeGender(dto.gender),
         phone,
         region,
         city,
@@ -178,7 +213,7 @@ export class PatientsService {
   }
 
   // ============================================================
-  // ДЕАКТИВАЦИЯ ПАЦИЕНТА
+  // ДЕАКТИВАЦИЯ
   // ============================================================
 
   async deactivatePatient(id: number) {
@@ -192,7 +227,7 @@ export class PatientsService {
   }
 
   // ============================================================
-  // ПРОЧИЕ МЕТОДЫ
+  // ПОЛУЧЕНИЕ ПРОФИЛЯ
   // ============================================================
 
   async getByUserId(userId: number) {
@@ -224,6 +259,7 @@ export class PatientsService {
     if (!patient) throw new NotFoundException('Пациент не найден');
 
     if (actorRole === 'ADMIN') return patient;
+
     if (actorRole !== 'DOCTOR') {
       throw new ForbiddenException('Доступ запрещён');
     }
@@ -251,6 +287,10 @@ export class PatientsService {
 
     return patient;
   }
+
+  // ============================================================
+  // СПИСОК ПАЦИЕНТОВ
+  // ============================================================
 
   async getAllForDoctorOrAdmin(actorUserId: number, actorRole: string) {
     if (actorRole === 'ADMIN') {
@@ -289,68 +329,123 @@ export class PatientsService {
     });
   }
 
-  async updatePatient(
-    patientId: number,
-    actorUserId: number,
-    actorRole: string,
-    dto: UpdatePatientDto,
-  ) {
-    const patient = await this.prisma.patient.findUnique({
-      where: { id: patientId },
-    });
+  // ============================================================
+  // ОБНОВЛЕНИЕ
+  // ============================================================
 
-    if (!patient) throw new NotFoundException('Пациент не найден');
+async updatePatient(
+  patientId: number,
+  actorUserId: number,
+  actorRole: string,
+  dto: UpdatePatientDto,
+) {
+  const patient = await this.prisma.patient.findUnique({
+    where: { id: patientId },
+  });
 
-    if (actorRole !== 'ADMIN' && patient.userId !== actorUserId) {
-      throw new ForbiddenException('Можно изменять только свой профиль');
-    }
+  if (!patient) throw new NotFoundException('Пациент не найден');
 
-    const data: Record<string, unknown> = {};
-
-    if (dto.firstName !== undefined) {
-      data.firstName = this.validateRussian(dto.firstName, 'Имя');
-    }
-    if (dto.lastName !== undefined) {
-      data.lastName = this.validateRussian(dto.lastName, 'Фамилия');
-    }
-    if (dto.middleName !== undefined) {
-      data.middleName = dto.middleName
-        ? this.validateRussian(dto.middleName, 'Отчество')
-        : null;
-    }
-    if (dto.birthDate !== undefined) {
-      data.birthDate = this.validateBirthDate(dto.birthDate);
-    }
-    if (dto.phone !== undefined) {
-      data.phone = this.normalizePhone(dto.phone);
-    }
-    if (dto.region !== undefined) {
-      data.region = this.normalizeRegion(dto.region);
-    }
-    if (dto.city !== undefined) {
-      data.city = this.validateRussian(dto.city, 'Город');
-    }
-    if (dto.street !== undefined) {
-      data.street = this.validateRussian(dto.street, 'Улица');
-    }
-    if (dto.houseNumber !== undefined) {
-      data.houseNumber = this.validateDigits(dto.houseNumber, 'Номер дома');
-    }
-    if (dto.apartment !== undefined) {
-      data.apartment = dto.apartment
-        ? this.validateDigits(dto.apartment, 'Квартира')
-        : null;
-    }
-
-    return this.prisma.patient.update({
-      where: { id: patientId },
-      data,
-      include: {
-        user: true,
-        primaryTherapist: true,
-      },
-    });
+  if (actorRole !== 'ADMIN' && patient.userId !== actorUserId) {
+    throw new ForbiddenException('Можно изменять только свой профиль');
   }
+
+  const data: Record<string, unknown> = {};
+
+  // --- ОБНОВЛЕНИЕ ПОЛЕЙ ---
+  if (dto.firstName !== undefined) {
+    data.firstName = this.validateRussian(dto.firstName, 'Имя');
+  }
+  if (dto.lastName !== undefined) {
+    data.lastName = this.validateRussian(dto.lastName, 'Фамилия');
+  }
+  if (dto.middleName !== undefined) {
+    data.middleName = dto.middleName
+      ? this.validateRussian(dto.middleName, 'Отчество')
+      : null;
+  }
+  if (dto.birthDate !== undefined) {
+    data.birthDate = this.validateBirthDate(dto.birthDate);
+  }
+  if (dto.phone !== undefined) {
+    data.phone = this.normalizePhone(dto.phone);
+  }
+  if (dto.region !== undefined) {
+    data.region = this.normalizeRegion(dto.region);
+  }
+  if (dto.city !== undefined) {
+    data.city = this.validateRussian(dto.city, 'Город');
+  }
+  if (dto.street !== undefined) {
+    data.street = this.validateRussian(dto.street, 'Улица');
+  }
+  if (dto.houseNumber !== undefined) {
+    data.houseNumber = this.validateDigits(dto.houseNumber, 'Номер дома');
+  }
+  if (dto.apartment !== undefined) {
+    data.apartment = dto.apartment
+      ? this.validateDigits(dto.apartment, 'Квартира')
+      : null;
+  }
+  if (dto.gender !== undefined) {
+    data.gender = this.normalizeGender(dto.gender);
+  }
+
+  // ============================================================
+  // АВТО-ПЕРЕНАЗНАЧЕНИЕ ТЕРАПЕВТА ПРИ ИЗМЕНЕНИИ АДРЕСА
+  // ============================================================
+
+  const addressChanged =
+    dto.region !== undefined ||
+    dto.city !== undefined ||
+    dto.street !== undefined ||
+    dto.houseNumber !== undefined;
+
+  if (addressChanged) {
+    const region = dto.region
+      ? this.normalizeRegion(dto.region)
+      : patient.region;
+
+    const city = dto.city
+      ? this.validateRussian(dto.city, 'Город')
+      : patient.city;
+
+    const street = dto.street
+      ? this.validateRussian(dto.street, 'Улица')
+      : patient.street;
+
+    const house = dto.houseNumber
+      ? this.validateDigits(dto.houseNumber, 'Номер дома')
+      : patient.houseNumber;
+
+    const normalizedStreet = this.normalizeStreet(street);
+    const normalizedHouse = this.normalizeHouse(house);
+
+    const newTherapistId = await this.autoAssignTherapist(
+      region,
+      city,
+      normalizedStreet,
+      normalizedHouse,
+    );
+
+    data.primaryTherapistId = newTherapistId;
+  }
+
+  // ============================================================
+
+  return this.prisma.patient.update({
+    where: { id: patientId },
+    data,
+    include: {
+      user: true,
+      primaryTherapist: true,
+    },
+  });
+}
+
+
+  // ============================================================
+  // ПОИСК
+  // ============================================================
 
   async search(query: string, actorUserId: number, actorRole: string) {
     if (actorRole !== 'DOCTOR' && actorRole !== 'ADMIN') {

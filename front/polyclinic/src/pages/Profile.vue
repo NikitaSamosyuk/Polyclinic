@@ -7,7 +7,7 @@ import { patientsApi } from '@/api/patients'
 import DoctorProfile from '@/pages/Profile/DoctorProfile.vue'
 import PatientProfile from '@/pages/Profile/PatientProfile.vue'
 import AdminProfile from '@/pages/Profile/AdminProfile.vue'
-import PatientRegistration from '@/pages/patients/PatientRegistration.vue'
+import PatientRegistration from '@/pages/Patient/PatientRegistration.vue'
 
 const auth = useAuthStore()
 
@@ -150,7 +150,7 @@ function onPatientRegistered() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col items-center py-10 px-4">
+  <div class="min-h-screen flex flex-col items-center py-10 px-4">
     <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
 
     <template v-else>
@@ -247,18 +247,12 @@ function onPatientRegistered() {
       <p v-if="msg" class="mt-4 text-center text-gray-700">{{ msg }}</p>
 
       <!-- PATIENT PROFILE -->
-      <div
-        v-if="auth.user?.role === 'PATIENT' && patient"
-        class="w-full max-w-3xl mt-10"
-      >
+      <div v-if="auth.user?.role === 'PATIENT' && patient" class="w-full max-w-3xl mt-10">
         <PatientProfile :patient="patient" />
       </div>
 
       <!-- PATIENT REGISTRATION BUTTON -->
-      <div
-        v-if="auth.user?.role === 'PATIENT' && !patient"
-        class="mt-10"
-      >
+      <div v-if="auth.user?.role === 'PATIENT' && !patient" class="mt-10">
         <button
           @click="showPatientRegistration = true"
           class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"

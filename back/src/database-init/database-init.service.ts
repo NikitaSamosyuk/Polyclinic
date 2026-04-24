@@ -172,13 +172,25 @@ export class DatabaseInitService implements OnModuleInit {
     });
 
     // ---------------------------------------------------------
-    // 6. Адресные зоны терапевта (только улицы Минска)
+    // 6. Адресные зоны терапевта (НОВАЯ СИСТЕМА)
     // ---------------------------------------------------------
     await this.prisma.therapistAddressZone.createMany({
       data: [
-        { doctorId: doctorProfiles[0].id, street: 'Ленина' },
-        { doctorId: doctorProfiles[0].id, street: 'Победы' },
-        { doctorId: doctorProfiles[0].id, street: 'Гагарина' },
+        {
+          doctorId: doctorProfiles[0].id,
+          street: 'ленина',
+          houses: ['10', '12', '5-20'],
+        },
+        {
+          doctorId: doctorProfiles[0].id,
+          street: 'победы',
+          houses: ['1', '3', '5'],
+        },
+        {
+          doctorId: doctorProfiles[0].id,
+          street: 'гагарина',
+          houses: ['50', '52'],
+        },
       ],
     });
 
@@ -208,10 +220,8 @@ export class DatabaseInitService implements OnModuleInit {
     });
 
     // ---------------------------------------------------------
-    // 8. Профили пациентов (новая структура адреса)
+    // 8. Профили пациентов
     // ---------------------------------------------------------
-
-    // user1 — Минск → назначаем терапевта по улице
     await this.prisma.patient.create({
       data: {
         userId: patientUsers[0].id,
@@ -219,7 +229,7 @@ export class DatabaseInitService implements OnModuleInit {
         lastName: 'Смирнов',
         middleName: 'Игоревич',
         birthDate: new Date('1990-05-12'),
-        gender: 'male',
+        gender: 'MALE',
         phone: '+375291234567',
 
         region: 'Минская область',
@@ -233,8 +243,7 @@ export class DatabaseInitService implements OnModuleInit {
       },
     });
 
-    // user2 — НЕ Минск → назначаем самого незагруженного терапевта
-    const leastLoadedTherapist = doctorProfiles.find((d) => d.isTherapist);
+    const fallbackTherapist = doctorProfiles.find((d) => d.isTherapist);
 
     await this.prisma.patient.create({
       data: {
@@ -243,7 +252,7 @@ export class DatabaseInitService implements OnModuleInit {
         lastName: 'Кузнецова',
         middleName: 'Андреевна',
         birthDate: new Date('1985-11-03'),
-        gender: 'female',
+        gender: 'FEMALE',
         phone: '+375297654321',
 
         region: 'Гродненская область',
@@ -253,7 +262,7 @@ export class DatabaseInitService implements OnModuleInit {
         apartment: '8',
 
         medicalCardNumber: 'MC-002',
-        primaryTherapistId: leastLoadedTherapist.id,
+        primaryTherapistId: fallbackTherapist.id,
       },
     });
 

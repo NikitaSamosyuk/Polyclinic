@@ -13,12 +13,12 @@ const api = axios.create({
 })
 
 let isRefreshing = false
-let failedQueue: { resolve: (token: string) => void; reject: (err: any) => void }[] = []
+let failedQueue = []
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error, token = null) => {
   failedQueue.forEach((p) => {
     if (error) p.reject(error)
-    else p.resolve(token as string)
+    else p.resolve(token)
   })
   failedQueue = []
 }
@@ -33,39 +33,35 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
-    const originalRequest = err.config
-    if (!originalRequest) return Promise.reject(err)
+    const original = err.config
+    if (!original) return Promise.reject(err)
 
     const status = err.response?.status
-    const path = new URL(originalRequest.url, window.location.origin).pathname
-
+    const fullPath = original.baseURL + original.url // ← ВАЖНО
     const isAuthRequest =
-      path.startsWith('/api/auth/') ||
-      path === '/api/users/password'
+      fullPath.startsWith('/api/auth/') ||
+      fullPath === '/api/users/password'
 
-    // ❗ refresh запрещён после logout
+    // После logout refresh запрещён
     if (loggedOut) return Promise.reject(err)
 
-    // ❗ Ошибки auth-запросов не трогаем
+    // Ошибки auth-запросов НЕ трогаем
     if (status === 401 && isAuthRequest) return Promise.reject(err)
 
-    // ❗ Если мы на /auth — не делаем refresh
-    if (window.location.pathname === '/auth') return Promise.reject(err)
-
-    // ❗ Refresh токена
-    if (status === 401 && !originalRequest._retry && !isAuthRequest) {
+    // Refresh токена
+    if (status === 401 && !original._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         })
           .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            return api(originalRequest)
+            original.headers.Authorization = `Bearer ${token}`
+            return api(original)
           })
           .catch((e) => Promise.reject(e))
       }
 
-      originalRequest._retry = true
+      original._retry = true
       isRefreshing = true
 
       try {
@@ -75,8 +71,8 @@ api.interceptors.response.use(
 
         localStorage.setItem('accessToken', newAccess)
         processQueue(null, newAccess)
-        originalRequest.headers.Authorization = `Bearer ${newAccess}`
-        return api(originalRequest)
+        original.headers.Authorization = `Bearer ${newAccess}`
+        return api(original)
       } catch (refreshErr) {
         processQueue(refreshErr, null)
         localStorage.removeItem('accessToken')

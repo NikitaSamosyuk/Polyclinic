@@ -3,44 +3,42 @@
     <div class="bg-white p-6 rounded-xl w-[420px] shadow-lg">
       <h2 class="text-xl font-semibold mb-4">Регистрация пациента</h2>
 
-      <!-- Ошибка от бэка -->
       <p v-if="serverError" class="text-red-600 mb-3 text-sm">
         {{ serverError }}
       </p>
 
       <form @submit.prevent="submit" class="space-y-3">
-
         <!-- Фамилия -->
         <div>
           <input
             v-model="form.lastName"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.lastName }"
             placeholder="Фамилия"
           />
-          <p v-if="errors.lastName" class="error">{{ errors.lastName }}</p>
+          <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
         </div>
 
         <!-- Имя -->
         <div>
           <input
             v-model="form.firstName"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.firstName }"
             placeholder="Имя"
           />
-          <p v-if="errors.firstName" class="error">{{ errors.firstName }}</p>
+          <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
         </div>
 
         <!-- Отчество -->
         <div>
           <input
             v-model="form.middleName"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.middleName }"
             placeholder="Отчество"
           />
-          <p v-if="errors.middleName" class="error">{{ errors.middleName }}</p>
+          <p v-if="errors.middleName" class="text-red-600 text-xs mt-1">{{ errors.middleName }}</p>
         </div>
 
         <!-- Дата рождения -->
@@ -49,16 +47,16 @@
           <input
             type="date"
             v-model="form.birthDate"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.birthDate }"
           />
-          <p v-if="errors.birthDate" class="error">{{ errors.birthDate }}</p>
+          <p v-if="errors.birthDate" class="text-red-600 text-xs mt-1">{{ errors.birthDate }}</p>
         </div>
 
         <!-- Пол -->
         <div>
           <label class="block text-sm">Пол</label>
-          <select v-model="form.gender" class="input">
+          <select v-model="form.gender" class="w-full px-3 py-2 border rounded-lg">
             <option value="MALE">Мужской</option>
             <option value="FEMALE">Женский</option>
           </select>
@@ -68,73 +66,81 @@
         <div>
           <input
             v-model="form.phone"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.phone }"
             placeholder="Телефон (9 цифр)"
           />
-          <p v-if="errors.phone" class="error">{{ errors.phone }}</p>
+          <p v-if="errors.phone" class="text-red-600 text-xs mt-1">{{ errors.phone }}</p>
         </div>
 
         <!-- Область -->
         <div>
           <input
             v-model="form.region"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.region }"
             placeholder="Область"
           />
-          <p v-if="errors.region" class="error">{{ errors.region }}</p>
+          <p v-if="errors.region" class="text-red-600 text-xs mt-1">{{ errors.region }}</p>
         </div>
 
         <!-- Город -->
         <div>
           <input
             v-model="form.city"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.city }"
             placeholder="Город"
           />
-          <p v-if="errors.city" class="error">{{ errors.city }}</p>
+          <p v-if="errors.city" class="text-red-600 text-xs mt-1">{{ errors.city }}</p>
         </div>
 
         <!-- Улица -->
         <div>
           <input
             v-model="form.street"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.street }"
             placeholder="Улица"
           />
-          <p v-if="errors.street" class="error">{{ errors.street }}</p>
+          <p v-if="errors.street" class="text-red-600 text-xs mt-1">{{ errors.street }}</p>
         </div>
 
         <!-- Дом -->
         <div>
           <input
             v-model="form.houseNumber"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.houseNumber }"
             placeholder="Дом"
           />
-          <p v-if="errors.houseNumber" class="error">{{ errors.houseNumber }}</p>
+          <p v-if="errors.houseNumber" class="text-red-600 text-xs mt-1">
+            {{ errors.houseNumber }}
+          </p>
         </div>
 
         <!-- Квартира -->
         <div>
           <input
             v-model="form.apartment"
-            class="input"
+            class="w-full px-3 py-2 border rounded-lg"
             :class="{ 'border-red-500': errors.apartment }"
             placeholder="Квартира"
           />
-          <p v-if="errors.apartment" class="error">{{ errors.apartment }}</p>
+          <p v-if="errors.apartment" class="text-red-600 text-xs mt-1">{{ errors.apartment }}</p>
         </div>
 
-        <button class="btn-primary w-full">Зарегистрироваться</button>
-        <button type="button" class="btn-secondary w-full" @click="$emit('close')">
-          Отмена
+        <button class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">
+          Зарегистрироваться
         </button>
 
+        <button
+          type="button"
+          class="w-full bg-gray-300 py-2 rounded-lg hover:bg-gray-400"
+          @click="$emit('close')"
+        >
+          Отмена
+        </button>
       </form>
     </div>
   </div>
@@ -151,7 +157,7 @@ const form = ref({
   lastName: '',
   middleName: '',
   birthDate: '',
-  gender: 'MALE',
+  gender: 'MALE', // по умолчанию
   phone: '',
   region: '',
   city: '',
@@ -171,7 +177,8 @@ function validate() {
 
   if (!onlyRus.test(form.value.lastName)) errors.value.lastName = 'Только русские буквы'
   if (!onlyRus.test(form.value.firstName)) errors.value.firstName = 'Только русские буквы'
-  if (form.value.middleName && !onlyRus.test(form.value.middleName)) errors.value.middleName = 'Только русские буквы'
+  if (form.value.middleName && !onlyRus.test(form.value.middleName))
+    errors.value.middleName = 'Только русские буквы'
 
   if (!form.value.birthDate) errors.value.birthDate = 'Укажите дату рождения'
 
@@ -182,7 +189,8 @@ function validate() {
   if (!onlyRus.test(form.value.street)) errors.value.street = 'Только русские буквы'
 
   if (!onlyDigits.test(form.value.houseNumber)) errors.value.houseNumber = 'Только цифры'
-  if (form.value.apartment && !onlyDigits.test(form.value.apartment)) errors.value.apartment = 'Только цифры'
+  if (form.value.apartment && !onlyDigits.test(form.value.apartment))
+    errors.value.apartment = 'Только цифры'
 
   return Object.keys(errors.value).length === 0
 }
@@ -191,19 +199,16 @@ async function submit() {
   serverError.value = ''
   errors.value = {}
 
-  // локальная проверка
   if (!validate()) return
 
   try {
     await patientsApi.register(form.value)
     emit('success')
-
   } catch (e) {
     const msg = e?.response?.data?.message
 
-    // Если backend вернул массив ошибок class-validator
     if (Array.isArray(msg)) {
-      msg.forEach(m => {
+      msg.forEach((m) => {
         const text = m.toLowerCase()
 
         if (text.includes('имя')) errors.value.firstName = m
@@ -218,19 +223,10 @@ async function submit() {
         if (text.includes('квартир')) errors.value.apartment = m
       })
 
-      // Если есть ошибки, не показываем общую
       if (Object.keys(errors.value).length > 0) return
     }
 
-    // Если ошибка не по полям — показываем сверху
     serverError.value = msg || 'Ошибка регистрации'
   }
 }
-
-
-<style scoped>
-.input { @apply w-full px-3 py-2 border rounded-lg; }
-.error { @apply text-red-600 text-xs mt-1; }
-.btn-primary { @apply bg-green-600 text-white py-2 rounded-lg hover:bg-green-700; }
-.btn-secondary { @apply bg-gray-300 py-2 rounded-lg hover:bg-gray-400; }
-</style>
+</script>

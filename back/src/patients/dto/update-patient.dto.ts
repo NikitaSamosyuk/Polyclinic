@@ -27,6 +27,7 @@ export class UpdatePatientDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^(MALE|FEMALE)$/i)
   gender?: string;
 
   @IsOptional()

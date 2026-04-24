@@ -3,7 +3,6 @@ import {
   IsOptional,
   IsDateString,
   Matches,
-  Length,
 } from 'class-validator';
 
 export class RegisterPatientDto {
@@ -27,6 +26,9 @@ export class RegisterPatientDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^(MALE|FEMALE)$/i, {
+    message: 'Пол должен быть MALE или FEMALE',
+  })
   gender?: string;
 
   @IsString()
