@@ -2,15 +2,19 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import { usersApi } from '@/api/users'
+import { patientsApi } from '@/api/patients'
 
 import DoctorProfile from '@/pages/Profile/DoctorProfile.vue'
 import PatientProfile from '@/pages/Profile/PatientProfile.vue'
 import AdminProfile from '@/pages/Profile/AdminProfile.vue'
+import PatientRegistration from '@/pages/patients/PatientRegistration.vue'
 
 const auth = useAuthStore()
 
 const loading = ref(true)
 const avatar = ref('')
+const patient = ref(null)
+const showPatientRegistration = ref(false)
 
 const editing = ref(false)
 const changingPassword = ref(false)
@@ -32,6 +36,12 @@ async function loadAvatar() {
     }
   } catch {
     avatar.value = ''
+  }
+}
+
+async function loadPatientProfile() {
+  if (auth.user?.role === 'PATIENT') {
+    patient.value = await patientsApi.me()
   }
 }
 
@@ -125,26 +135,18 @@ async function onAvatarClick() {
   input.click()
 }
 
-const roleComponent = computed(() => {
-  switch (auth.user?.role) {
-    case 'DOCTOR':
-      return DoctorProfile
-    case 'PATIENT':
-      return PatientProfile
-    case 'ADMIN':
-      return AdminProfile
-    default:
-      return null
-  }
-})
-
 onMounted(async () => {
-  console.log('[PROFILE] mounted, user:', auth.user)
   if (auth.user) {
     await loadAvatar()
+    await loadPatientProfile()
   }
   loading.value = false
 })
+
+function onPatientRegistered() {
+  showPatientRegistration.value = false
+  loadPatientProfile()
+}
 </script>
 
 <template>
@@ -152,6 +154,7 @@ onMounted(async () => {
     <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
 
     <template v-else>
+      <!-- USER CARD -->
       <div
         v-if="auth.user"
         class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 flex items-center gap-6"
@@ -198,20 +201,13 @@ onMounted(async () => {
         </div>
       </div>
 
+      <!-- EDIT PROFILE -->
       <div
         v-if="auth.user && editing"
         class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 mt-6 space-y-3"
       >
-        <input
-          v-model="form.username"
-          class="w-full px-4 py-2 border rounded-lg"
-          placeholder="Имя"
-        />
-        <input
-          v-model="form.email"
-          class="w-full px-4 py-2 border rounded-lg"
-          placeholder="Email"
-        />
+        <input v-model="form.username" class="w-full px-4 py-2 border rounded-lg" />
+        <input v-model="form.email" class="w-full px-4 py-2 border rounded-lg" />
 
         <button
           @click="saveProfile"
@@ -221,6 +217,7 @@ onMounted(async () => {
         </button>
       </div>
 
+      <!-- CHANGE PASSWORD -->
       <div
         v-if="auth.user && changingPassword"
         class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 mt-6 space-y-3"
@@ -249,11 +246,44 @@ onMounted(async () => {
 
       <p v-if="msg" class="mt-4 text-center text-gray-700">{{ msg }}</p>
 
-      <div v-if="auth.user && roleComponent" class="w-full max-w-3xl mt-10">
-        <component :is="roleComponent" />
+      <!-- PATIENT PROFILE -->
+      <div
+        v-if="auth.user?.role === 'PATIENT' && patient"
+        class="w-full max-w-3xl mt-10"
+      >
+        <PatientProfile :patient="patient" />
       </div>
 
-      <!-- если вдруг user = null, но мы всё-таки тут -->
+      <!-- PATIENT REGISTRATION BUTTON -->
+      <div
+        v-if="auth.user?.role === 'PATIENT' && !patient"
+        class="mt-10"
+      >
+        <button
+          @click="showPatientRegistration = true"
+          class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          Стать пациентом
+        </button>
+      </div>
+
+      <!-- DOCTOR PROFILE -->
+      <div v-if="auth.user?.role === 'DOCTOR'" class="w-full max-w-3xl mt-10">
+        <DoctorProfile />
+      </div>
+
+      <!-- ADMIN PROFILE -->
+      <div v-if="auth.user?.role === 'ADMIN'" class="w-full max-w-3xl mt-10">
+        <AdminProfile />
+      </div>
+
+      <!-- MODAL -->
+      <PatientRegistration
+        v-if="showPatientRegistration"
+        @close="showPatientRegistration = false"
+        @success="onPatientRegistered"
+      />
+
       <div v-if="!auth.user" class="mt-10 text-gray-600">
         Профиль недоступен. Попробуй войти заново.
       </div>

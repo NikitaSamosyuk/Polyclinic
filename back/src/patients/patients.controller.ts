@@ -3,7 +3,6 @@ import {
   Post,
   Get,
   Patch,
-  Delete,
   Body,
   Req,
   Param,
@@ -16,21 +15,23 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 
 @Controller('patients')
 export class PatientsController {
-  constructor(private patients: PatientsService) {}
+  constructor(private readonly patients: PatientsService) {}
 
-  // --- Регистрация пациента (после регистрации User) ---
+  // ------------------------------------------------------------
+  //  Регистрация пациента (только роль PATIENT)
+  // ------------------------------------------------------------
   @Post('register')
   async register(@Req() req, @Body() dto: RegisterPatientDto) {
     if (req.user.role !== 'PATIENT') {
-      throw new ForbiddenException(
-        'Only patients can register patient profile',
-      );
+      throw new ForbiddenException('Only patients can register patient profile');
     }
 
     return this.patients.createPatient(req.user.sub, dto);
   }
 
-  // --- Мой профиль ---
+  // ------------------------------------------------------------
+  //  Мой профиль пациента
+  // ------------------------------------------------------------
   @Get('me')
   async me(@Req() req) {
     if (req.user.role !== 'PATIENT') {
@@ -40,13 +41,26 @@ export class PatientsController {
     return this.patients.getByUserId(req.user.sub);
   }
 
-  // --- Список пациентов (для врача/админа) ---
+  // ------------------------------------------------------------
+  //  Поиск пациентов (для врача/админа)
+  // ------------------------------------------------------------
+  @Get('search/query')
+  async search(@Req() req, @Query('q') q: string) {
+    if (!q) return [];
+    return this.patients.search(q, req.user.sub, req.user.role);
+  }
+
+  // ------------------------------------------------------------
+  //  Список пациентов (для врача/админа)
+  // ------------------------------------------------------------
   @Get()
   async getAll(@Req() req) {
     return this.patients.getAllForDoctorOrAdmin(req.user.sub, req.user.role);
   }
 
-  // --- Карточка пациента по patientId ---
+  // ------------------------------------------------------------
+  //  Карточка пациента по patientId
+  // ------------------------------------------------------------
   @Get(':id')
   async getById(@Req() req, @Param('id') id: string) {
     return this.patients.getByIdForDoctorOrAdmin(
@@ -56,7 +70,9 @@ export class PatientsController {
     );
   }
 
-  // --- Обновление профиля пациента ---
+  // ------------------------------------------------------------
+  //  Обновление профиля пациента
+  // ------------------------------------------------------------
   @Patch(':id')
   async update(
     @Req() req,
@@ -71,20 +87,15 @@ export class PatientsController {
     );
   }
 
-  // --- Удаление пациента (только админ) ---
-  @Delete(':id')
-  async delete(@Req() req, @Param('id') id: string) {
+  // ------------------------------------------------------------
+  //  ДЕАКТИВАЦИЯ пациента (только админ)
+  // ------------------------------------------------------------
+  @Patch(':id/deactivate')
+  async deactivate(@Req() req, @Param('id') id: string) {
     if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admin can delete patients');
+      throw new ForbiddenException('Only admin can deactivate patients');
     }
 
-    return this.patients.deletePatient(Number(id));
-  }
-
-  // --- Поиск пациентов ---
-  @Get('search/query')
-  async search(@Req() req, @Query('q') q: string) {
-    if (!q) return [];
-    return this.patients.search(q, req.user.sub, req.user.role);
+    return this.patients.deactivatePatient(Number(id));
   }
 }

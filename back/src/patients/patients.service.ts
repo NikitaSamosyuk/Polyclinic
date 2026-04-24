@@ -10,34 +10,133 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 
 @Injectable()
 export class PatientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  // --- Регистрация пациента + автоматический терапевт ---
-  async createPatient(userId: number, dto: RegisterPatientDto) {
-    const exists = await this.prisma.patient.findUnique({
-      where: { userId },
-    });
+  // ============================================================
+  // ВАЛИДАЦИИ
+  // ============================================================
 
-    if (exists) {
-      throw new BadRequestException('Patient profile already exists');
+  private validateRussian(value: string, field: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) throw new BadRequestException(`${field} обязательно`);
+
+    if (!/^[А-ЯЁа-яё\s-]+$/.test(trimmed)) {
+      throw new BadRequestException(
+        `${field} должно содержать только русские буквы, пробелы и дефис`,
+      );
     }
+
+    return trimmed;
+  }
+
+  private validateDigits(value: string, field: string): string {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      throw new BadRequestException(`${field} должно содержать только цифры`);
+    }
+    return trimmed;
+  }
+
+  private normalizePhone(raw: string): string {
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length !== 9) {
+      throw new BadRequestException(
+        'Телефон должен содержать ровно 9 цифр (без кода страны)',
+      );
+    }
+    return `+375${digits}`;
+  }
+
+  private normalizeRegion(raw: string): string {
+    if (!raw) throw new BadRequestException('Область обязательна');
+
+    let r = raw.trim().toLowerCase();
+
+    // убираем "область", "обл", "обл."
+    r = r.replace(/область$/i, '');
+    r = r.replace(/обл\.?$/i, '');
+
+    // берём только первое слово
+    const first = r.split(/\s+/)[0];
+    if (!first) throw new BadRequestException('Некорректная область');
+
+    const normalized =
+      first.charAt(0).toUpperCase() + first.slice(1);
+
+    if (!/^[А-ЯЁа-яё-]+$/.test(normalized)) {
+      throw new BadRequestException(
+        'Область должна содержать только русские буквы и дефис',
+      );
+    }
+
+    return `${normalized} область`;
+  }
+
+  private validateBirthDate(raw: string): Date {
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('Некорректная дата рождения');
+    }
+
+    const now = new Date();
+    if (date > now) {
+      throw new BadRequestException('Дата рождения не может быть в будущем');
+    }
+
+    const age = now.getFullYear() - date.getFullYear();
+    const m = now.getMonth() - date.getMonth();
+    const beforeBirthday = m < 0 || (m === 0 && now.getDate() < date.getDate());
+    const realAge = beforeBirthday ? age - 1 : age;
+
+    if (realAge < 18) {
+      throw new BadRequestException('Пациент должен быть старше 18 лет');
+    }
+
+    return date;
+  }
+
+  // ============================================================
+  // СОЗДАНИЕ ПАЦИЕНТА
+  // ============================================================
+
+  async createPatient(userId: number, dto: RegisterPatientDto) {
+    const exists = await this.prisma.patient.findUnique({ where: { userId } });
+    if (exists) throw new BadRequestException('Профиль пациента уже существует');
+
+    const firstName = this.validateRussian(dto.firstName, 'Имя');
+    const lastName = this.validateRussian(dto.lastName, 'Фамилия');
+    const middleName = dto.middleName
+      ? this.validateRussian(dto.middleName, 'Отчество')
+      : null;
+
+    const birthDate = this.validateBirthDate(dto.birthDate);
+    const phone = this.normalizePhone(dto.phone);
+
+    const region = this.normalizeRegion(dto.region);
+    const city = this.validateRussian(dto.city, 'Город');
+    const street = this.validateRussian(dto.street, 'Улица');
+
+    const houseNumber = this.validateDigits(dto.houseNumber, 'Номер дома');
+    const apartment = dto.apartment
+      ? this.validateDigits(dto.apartment, 'Квартира')
+      : null;
+
+    // ============================================================
+    // АВТО-НАЗНАЧЕНИЕ ТЕРАПЕВТА
+    // ============================================================
 
     let primaryTherapistId: number | null = null;
 
     const isMinsk =
-      dto.region === 'Минская область' &&
-      dto.city.trim().toLowerCase() === 'минск';
+      region === 'Минская область' &&
+      city.trim().toLowerCase() === 'минск';
 
     if (isMinsk) {
       const zone = await this.prisma.therapistAddressZone.findFirst({
-        where: {
-          zone: dto.street, // zone = название улицы
-        },
+        where: { zone: street },
       });
 
-      if (zone) {
-        primaryTherapistId = zone.doctorId;
-      }
+      if (zone) primaryTherapistId = zone.doctorId;
     }
 
     if (!primaryTherapistId) {
@@ -47,7 +146,7 @@ export class PatientsService {
       });
 
       if (therapists.length === 0) {
-        throw new BadRequestException('No therapists available');
+        throw new BadRequestException('Нет доступных терапевтов');
       }
 
       therapists.sort((a, b) => a.patients.length - b.patients.length);
@@ -57,53 +156,58 @@ export class PatientsService {
     return this.prisma.patient.create({
       data: {
         userId,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        middleName: dto.middleName,
-        birthDate: new Date(dto.birthDate),
+        firstName,
+        lastName,
+        middleName,
+        birthDate,
         gender: dto.gender,
-        phone: dto.phone,
-
-        // адрес — предполагаем, что поля есть в Prisma
-        region: dto.region,
-        city: dto.city,
-        street: dto.street,
-        houseNumber: dto.houseNumber,
-        apartment: dto.apartment,
-
+        phone,
+        region,
+        city,
+        street,
+        houseNumber,
+        apartment,
         primaryTherapistId,
+        isActive: true,
       },
       include: {
-        primaryTherapist: {
-          include: { cabinet: true },
-        },
+        primaryTherapist: { include: { cabinet: true } },
         user: true,
       },
     });
   }
 
-  // --- Профиль по userId (для /patients/me и /patients/user/:userId) ---
+  // ============================================================
+  // ДЕАКТИВАЦИЯ ПАЦИЕНТА
+  // ============================================================
+
+  async deactivatePatient(id: number) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Пациент не найден');
+
+    return this.prisma.patient.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  // ============================================================
+  // ПРОЧИЕ МЕТОДЫ
+  // ============================================================
+
   async getByUserId(userId: number) {
     const patient = await this.prisma.patient.findFirst({
       where: { userId },
       include: {
         user: true,
-        primaryTherapist: {
-          include: {
-            cabinet: true,
-          },
-        },
+        primaryTherapist: { include: { cabinet: true } },
       },
     });
 
-    if (!patient) {
-      throw new NotFoundException(`Patient with userId=${userId} not found`);
-    }
-
+    if (!patient) throw new NotFoundException('Пациент не найден');
     return patient;
   }
 
-  // --- Профиль по patientId (для врача/админа) ---
   async getByIdForDoctorOrAdmin(
     patientId: number,
     actorUserId: number,
@@ -117,51 +221,37 @@ export class PatientsService {
       },
     });
 
-    if (!patient) {
-      throw new NotFoundException('Patient not found');
-    }
+    if (!patient) throw new NotFoundException('Пациент не найден');
 
-    if (actorRole === 'ADMIN') {
-      return patient;
-    }
-
+    if (actorRole === 'ADMIN') return patient;
     if (actorRole !== 'DOCTOR') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Доступ запрещён');
     }
 
     const doctor = await this.prisma.doctor.findUnique({
       where: { userId: actorUserId },
     });
 
-    if (!doctor) {
-      throw new ForbiddenException('Doctor profile not found');
-    }
+    if (!doctor) throw new ForbiddenException('Профиль врача не найден');
 
     const isTherapistPatient =
-      patient.primaryTherapistId && patient.primaryTherapistId === doctor.id;
+      patient.primaryTherapistId === doctor.id;
 
     const hasAppointment = await this.prisma.appointment.findFirst({
-      where: {
-        doctorId: doctor.id,
-        patientId: patient.id,
-      },
+      where: { doctorId: doctor.id, patientId: patient.id },
     });
 
     const hasVisit = await this.prisma.visit.findFirst({
-      where: {
-        doctorId: doctor.id,
-        patientId: patient.id,
-      },
+      where: { doctorId: doctor.id, patientId: patient.id },
     });
 
     if (!isTherapistPatient && !hasAppointment && !hasVisit) {
-      throw new ForbiddenException('Access denied to this patient');
+      throw new ForbiddenException('Нет доступа к этому пациенту');
     }
 
     return patient;
   }
 
-  // --- Список пациентов (для врача/админа) ---
   async getAllForDoctorOrAdmin(actorUserId: number, actorRole: string) {
     if (actorRole === 'ADMIN') {
       return this.prisma.patient.findMany({
@@ -174,31 +264,21 @@ export class PatientsService {
     }
 
     if (actorRole !== 'DOCTOR') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Доступ запрещён');
     }
 
     const doctor = await this.prisma.doctor.findUnique({
       where: { userId: actorUserId },
     });
 
-    if (!doctor) {
-      throw new ForbiddenException('Doctor profile not found');
-    }
+    if (!doctor) throw new ForbiddenException('Профиль врача не найден');
 
-    const patients = await this.prisma.patient.findMany({
+    return this.prisma.patient.findMany({
       where: {
         OR: [
           { primaryTherapistId: doctor.id },
-          {
-            appointments: {
-              some: { doctorId: doctor.id },
-            },
-          },
-          {
-            visits: {
-              some: { doctorId: doctor.id },
-            },
-          },
+          { appointments: { some: { doctorId: doctor.id } } },
+          { visits: { some: { doctorId: doctor.id } } },
         ],
       },
       include: {
@@ -207,11 +287,8 @@ export class PatientsService {
       },
       orderBy: { lastName: 'asc' },
     });
-
-    return patients;
   }
 
-  // --- Обновление профиля пациента ---
   async updatePatient(
     patientId: number,
     actorUserId: number,
@@ -222,20 +299,52 @@ export class PatientsService {
       where: { id: patientId },
     });
 
-    if (!patient) {
-      throw new NotFoundException('Patient not found');
-    }
+    if (!patient) throw new NotFoundException('Пациент не найден');
 
     if (actorRole !== 'ADMIN' && patient.userId !== actorUserId) {
-      throw new ForbiddenException('You can update only your own profile');
+      throw new ForbiddenException('Можно изменять только свой профиль');
+    }
+
+    const data: Record<string, unknown> = {};
+
+    if (dto.firstName !== undefined) {
+      data.firstName = this.validateRussian(dto.firstName, 'Имя');
+    }
+    if (dto.lastName !== undefined) {
+      data.lastName = this.validateRussian(dto.lastName, 'Фамилия');
+    }
+    if (dto.middleName !== undefined) {
+      data.middleName = dto.middleName
+        ? this.validateRussian(dto.middleName, 'Отчество')
+        : null;
+    }
+    if (dto.birthDate !== undefined) {
+      data.birthDate = this.validateBirthDate(dto.birthDate);
+    }
+    if (dto.phone !== undefined) {
+      data.phone = this.normalizePhone(dto.phone);
+    }
+    if (dto.region !== undefined) {
+      data.region = this.normalizeRegion(dto.region);
+    }
+    if (dto.city !== undefined) {
+      data.city = this.validateRussian(dto.city, 'Город');
+    }
+    if (dto.street !== undefined) {
+      data.street = this.validateRussian(dto.street, 'Улица');
+    }
+    if (dto.houseNumber !== undefined) {
+      data.houseNumber = this.validateDigits(dto.houseNumber, 'Номер дома');
+    }
+    if (dto.apartment !== undefined) {
+      data.apartment = dto.apartment
+        ? this.validateDigits(dto.apartment, 'Квартира')
+        : null;
     }
 
     return this.prisma.patient.update({
       where: { id: patientId },
-      data: {
-        ...dto,
-        birthDate: dto.birthDate ? new Date(dto.birthDate) : patient.birthDate,
-      },
+      data,
       include: {
         user: true,
         primaryTherapist: true,
@@ -243,32 +352,16 @@ export class PatientsService {
     });
   }
 
-  // --- Удаление пациента (только админ) ---
-  async deletePatient(patientId: number) {
-    const patient = await this.prisma.patient.findUnique({
-      where: { id: patientId },
-    });
-
-    if (!patient) {
-      throw new NotFoundException('Patient not found');
-    }
-
-    return this.prisma.patient.delete({
-      where: { id: patientId },
-    });
-  }
-
-  // --- Поиск пациентов (ФИО / телефон / медкарта) ---
   async search(query: string, actorUserId: number, actorRole: string) {
     if (actorRole !== 'DOCTOR' && actorRole !== 'ADMIN') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenException('Доступ запрещён');
     }
 
     const whereBase = {
       OR: [
-        { firstName: { contains: query, mode: 'insensitive' } },
-        { lastName: { contains: query, mode: 'insensitive' } },
-        { middleName: { contains: query, mode: 'insensitive' } },
+        { firstName: { contains: query, mode: 'insensitive' as const } },
+        { lastName: { contains: query, mode: 'insensitive' as const } },
+        { middleName: { contains: query, mode: 'insensitive' as const } },
         { phone: { contains: query } },
         { medicalCardNumber: { contains: query } },
       ],
@@ -289,9 +382,7 @@ export class PatientsService {
       where: { userId: actorUserId },
     });
 
-    if (!doctor) {
-      throw new ForbiddenException('Doctor profile not found');
-    }
+    if (!doctor) throw new ForbiddenException('Профиль врача не найден');
 
     return this.prisma.patient.findMany({
       where: {
@@ -300,16 +391,8 @@ export class PatientsService {
           {
             OR: [
               { primaryTherapistId: doctor.id },
-              {
-                appointments: {
-                  some: { doctorId: doctor.id },
-                },
-              },
-              {
-                visits: {
-                  some: { doctorId: doctor.id },
-                },
-              },
+              { appointments: { some: { doctorId: doctor.id } } },
+              { visits: { some: { doctorId: doctor.id } } },
             ],
           },
         ],

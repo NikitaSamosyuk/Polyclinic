@@ -1,14 +1,25 @@
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  Matches,
+  Length,
+} from 'class-validator';
 
 export class RegisterPatientDto {
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, { message: 'Имя только русскими буквами' })
   firstName: string;
 
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, { message: 'Фамилия только русскими буквами' })
   lastName: string;
 
   @IsOptional()
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, {
+    message: 'Отчество только русскими буквами',
+  })
   middleName?: string;
 
   @IsDateString()
@@ -18,24 +29,28 @@ export class RegisterPatientDto {
   @IsString()
   gender?: string;
 
-  @IsOptional()
   @IsString()
-  phone?: string;
+  @Matches(/^\d{9}$/, { message: 'Телефон должен содержать 9 цифр' })
+  phone: string;
 
-  // --- Адрес ---
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, { message: 'Область только русскими буквами' })
   region: string;
 
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, { message: 'Город только русскими буквами' })
   city: string;
 
   @IsString()
+  @Matches(/^[А-ЯЁа-яё\s-]+$/, { message: 'Улица только русскими буквами' })
   street: string;
 
   @IsString()
+  @Matches(/^\d+$/, { message: 'Номер дома только цифры' })
   houseNumber: string;
 
   @IsOptional()
   @IsString()
+  @Matches(/^\d+$/, { message: 'Квартира только цифры' })
   apartment?: string;
 }
