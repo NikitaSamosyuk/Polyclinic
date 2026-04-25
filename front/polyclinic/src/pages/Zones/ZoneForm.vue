@@ -1,3 +1,70 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '@/api/axios'
+
+const props = defineProps({
+  mode: String,
+  zone: Object,
+})
+
+const emit = defineEmits(['close', 'saved'])
+
+const doctors = ref([])
+const serverError = ref('')
+
+const form = ref({
+  doctorId: '',
+  street: '',
+})
+
+const housesInput = ref('')
+
+async function loadDoctors() {
+  try {
+    const res = await api.get('/doctors')
+    doctors.value = res.data.filter((d) => d.isTherapist)
+  } catch (e) {
+    serverError.value = e?.response?.data?.message || 'Ошибка загрузки врачей'
+  }
+}
+
+onMounted(() => {
+  loadDoctors()
+
+  if (props.mode === 'edit' && props.zone) {
+    form.value.doctorId = props.zone.doctorId
+    form.value.street = props.zone.street
+    housesInput.value = props.zone.houses.join(', ')
+  }
+})
+
+async function submit() {
+  serverError.value = ''
+
+  const payload = {
+    street: form.value.street.trim().toLowerCase(),
+    houses: housesInput.value.split(',').map((h) => h.trim().toLowerCase()),
+  }
+
+  try {
+    let result
+
+    if (props.mode === 'create') {
+      result = await api.post('/therapist-zones', {
+        doctorId: Number(form.value.doctorId),
+        ...payload,
+      })
+    } else {
+      result = await api.patch(`/therapist-zones/${props.zone.id}`, payload)
+    }
+
+    emit('saved', result.data)
+  } catch (e) {
+    serverError.value = e?.response?.data?.message || 'Ошибка сохранения'
+  }
+}
+</script>
+
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
     <div class="bg-white p-6 rounded-xl w-[480px] shadow max-h-[90vh] overflow-y-auto">
@@ -54,66 +121,3 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue'
-import api from '@/api/axios'
-
-const props = defineProps({
-  mode: String,
-  zone: Object,
-})
-
-const emit = defineEmits(['close', 'saved'])
-
-const doctors = ref([])
-const serverError = ref('')
-
-const form = ref({
-  doctorId: '',
-  street: '',
-})
-
-const housesInput = ref('')
-
-async function loadDoctors() {
-  const res = await api.get('/doctors')
-  doctors.value = res.data.filter((d) => d.isTherapist)
-}
-
-onMounted(() => {
-  loadDoctors()
-
-  if (props.mode === 'edit' && props.zone) {
-    form.value.doctorId = props.zone.doctorId
-    form.value.street = props.zone.street
-    housesInput.value = props.zone.houses.join(', ')
-  }
-})
-
-async function submit() {
-  serverError.value = ''
-
-  const payload = {
-    street: form.value.street.trim().toLowerCase(),
-    houses: housesInput.value.split(',').map((h) => h.trim().toLowerCase()),
-  }
-
-  try {
-    let result
-
-    if (props.mode === 'create') {
-      result = await api.post('/therapist-zones', {
-        doctorId: Number(form.value.doctorId),
-        ...payload,
-      })
-    } else {
-      result = await api.patch(`/therapist-zones/${props.zone.id}`, payload)
-    }
-
-    emit('saved', result.data)
-  } catch (e) {
-    serverError.value = e?.response?.data?.message || 'Ошибка сохранения'
-  }
-}
-</script>

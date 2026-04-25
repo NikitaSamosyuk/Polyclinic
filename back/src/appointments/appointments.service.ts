@@ -1,104 +1,57 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException, Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { ScheduleService } from '../schedule/schedule.service'
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly schedule: ScheduleService,
+  ) {}
 
-  // --- Создать запись ---
-  async createFromSlot(patientUserId: number, dto: any) {
+  async create(patientUserId: number, dto: {
+    doctorId: number
+    date: string
+    startTime: string
+  }) {
     const patient = await this.prisma.patient.findUnique({
       where: { userId: patientUserId },
-    });
+    })
 
-    if (!patient) throw new BadRequestException('Пациент не найден');
-
-    // Проверка пересечения
-    const overlapping = await this.prisma.appointment.findFirst({
-      where: {
-        doctorId: dto.doctorId,
-        appointmentDate: new Date(dto.appointmentDate),
-        startTime: { lt: new Date(dto.endTime) },
-        endTime: { gt: new Date(dto.startTime) },
-      },
-    });
-
-    if (overlapping) {
-      throw new BadRequestException('Слот уже занят');
+    if (!patient) {
+      throw new BadRequestException('Пациент не найден')
     }
+
+    const { doctorId, date, startTime } = dto
+
+    const shift = await this.schedule.getDoctorShift(doctorId, date)
+    if (!shift) {
+      throw new BadRequestException('Врач не работает в этот день')
+    }
+
+    const slots = await this.schedule.getSlotsForDoctor(doctorId, date)
+    const slot = slots.slots.find((s) => s.start.toISOString().includes(startTime))
+
+    if (!slot) {
+      throw new BadRequestException('Слот не найден')
+    }
+
+    if (!slot.isFree) {
+      throw new BadRequestException('Слот уже занят')
+    }
+
+    const start = new Date(`${date}T${startTime}:00`)
+    const end = new Date(start.getTime() + shift.cabinet.slotDuration * 60_000)
 
     return this.prisma.appointment.create({
       data: {
         patientId: patient.id,
-        doctorId: dto.doctorId,
-        cabinetId: dto.cabinetId,
-        appointmentDate: new Date(dto.appointmentDate),
-        startTime: new Date(dto.startTime),
-        endTime: new Date(dto.endTime),
-        reason: dto.reason || null,
+        doctorId,
+        cabinetId: shift.cabinetId,
+        appointmentDate: new Date(date),
+        startTime: start,
+        endTime: end,
       },
-    });
-  }
-
-  // --- Мои записи (пациент / врач) ---
-  async getForUser(userId: number, role: string) {
-    if (role === 'PATIENT') {
-      const patient = await this.prisma.patient.findUnique({
-        where: { userId },
-      });
-
-      return this.prisma.appointment.findMany({
-        where: { patientId: patient.id },
-        include: { doctor: true, cabinet: true },
-        orderBy: { startTime: 'asc' },
-      });
-    }
-
-    if (role === 'DOCTOR') {
-      const doctor = await this.prisma.doctor.findUnique({
-        where: { userId },
-      });
-
-      return this.prisma.appointment.findMany({
-        where: { doctorId: doctor.id },
-        include: { patient: true, cabinet: true },
-        orderBy: { startTime: 'asc' },
-      });
-    }
-
-    throw new BadRequestException('Недоступно');
-  }
-
-  // --- Все записи врача (для админа) ---
-  async getForDoctor(doctorId: number) {
-    return this.prisma.appointment.findMany({
-      where: { doctorId },
-      include: { patient: true, cabinet: true },
-      orderBy: { startTime: 'asc' },
-    });
-  }
-
-  // --- Все записи (для админа) ---
-  async getAll() {
-    return this.prisma.appointment.findMany({
-      include: {
-        doctor: true,
-        patient: true,
-        cabinet: true,
-      },
-      orderBy: { startTime: 'asc' },
-    });
-  }
-
-  // --- Удалить запись ---
-  async delete(id: number) {
-    const exists = await this.prisma.appointment.findUnique({ where: { id } });
-    if (!exists) throw new NotFoundException('Appointment not found');
-
-    return this.prisma.appointment.delete({ where: { id } });
+    })
   }
 }

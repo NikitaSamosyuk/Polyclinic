@@ -14,8 +14,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   public visit: any;
   public attachedFile: any;
 
-  public doctorShift: any; // ← ДОБАВЛЕНО
-  public therapistAddressZone: any; // ← ДОБАВЛЕНО
+  public doctorShift: any;
+  public therapistAddressZone: any;
+
+  // 🔥 ДОБАВЛЕНО — ЭТОГО НЕ ХВАТАЛО
+  public doctorScheduleTemplate: any;
 
   constructor() {
     const pool = new Pool({
@@ -36,8 +39,11 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.visit = this.client.visit;
     this.attachedFile = this.client.attachedFile;
 
-    this.doctorShift = this.client.doctorShift; // ← ДОБАВЛЕНО
-    this.therapistAddressZone = this.client.therapistAddressZone; // ← ДОБАВЛЕНО
+    this.doctorShift = this.client.doctorShift;
+    this.therapistAddressZone = this.client.therapistAddressZone;
+
+    // 🔥 ДОБАВЛЕНО — ПРОКСИРУЕМ МОДЕЛЬ
+    this.doctorScheduleTemplate = this.client.doctorScheduleTemplate;
   }
 
   $transaction(...args: any[]) {

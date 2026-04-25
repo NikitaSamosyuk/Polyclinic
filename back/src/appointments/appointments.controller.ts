@@ -1,63 +1,24 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Req,
-  Body,
-  ForbiddenException,
-  Param,
-  Delete,
-} from '@nestjs/common';
-import { AppointmentsService } from './appointments.service';
-import { CreateAppointmentSlotDto } from './dto/create-appointment-slot.dto';
+import { Body, Controller, ForbiddenException, Post, Req } from '@nestjs/common'
+import { AppointmentsService } from './appointments.service'
+import { Request } from 'express'
+
+interface AuthRequest extends Request {
+  user?: {
+    sub: number
+    role: 'ADMIN' | 'DOCTOR' | 'PATIENT'
+  }
+}
 
 @Controller('appointments')
 export class AppointmentsController {
-  constructor(private appointments: AppointmentsService) {}
+  constructor(private readonly appointments: AppointmentsService) {}
 
-  // --- Создать запись (только пациент) ---
-  @Post('slot')
-  async createFromSlot(@Req() req, @Body() dto: CreateAppointmentSlotDto) {
-    if (req.user.role !== 'PATIENT') {
-      throw new ForbiddenException('Only patients can create appointments');
+  @Post()
+  async create(@Req() req: AuthRequest, @Body() dto: any) {
+    if (!req.user || req.user.role !== 'PATIENT') {
+      throw new ForbiddenException('Только пациент может записываться')
     }
 
-    return this.appointments.createFromSlot(req.user.sub, dto);
-  }
-
-  // --- Мои записи (пациент / врач) ---
-  @Get()
-  async getForUser(@Req() req) {
-    return this.appointments.getForUser(req.user.sub, req.user.role);
-  }
-
-  // --- Все записи врача (только админ) ---
-  @Get('doctor/:doctorId')
-  async getForDoctor(@Req() req, @Param('doctorId') doctorId: string) {
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admin can view doctor appointments');
-    }
-
-    return this.appointments.getForDoctor(Number(doctorId));
-  }
-
-  // --- Все записи (только админ) ---
-  @Get('all')
-  async getAll(@Req() req) {
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admin can view all appointments');
-    }
-
-    return this.appointments.getAll();
-  }
-
-  // --- Удалить запись (только админ) ---
-  @Delete(':id')
-  async delete(@Req() req, @Param('id') id: string) {
-    if (req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admin can delete appointments');
-    }
-
-    return this.appointments.delete(Number(id));
+    return this.appointments.create(req.user.sub, dto)
   }
 }

@@ -1,4 +1,3 @@
-// src/doctors/doctors.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -6,17 +5,33 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const DEFAULT_PHOTO = '/uploads/defaults/doctor.png';
+
 @Injectable()
 export class DoctorsService {
   constructor(private prisma: PrismaService) {}
 
+  private withDefaultPhoto(doctor: any) {
+    if (!doctor) return doctor;
+    return {
+      ...doctor,
+      photoUrl: doctor.photoUrl || DEFAULT_PHOTO,
+    };
+  }
+
+  private withDefaultPhotoMany(doctors: any[]) {
+    return doctors.map((d) => this.withDefaultPhoto(d));
+  }
+
   // --- список активных врачей ---
   async getAllActive() {
-    return this.prisma.doctor.findMany({
+    const doctors = await this.prisma.doctor.findMany({
       where: { user: { isActive: true } },
       include: { cabinet: true },
       orderBy: { lastName: 'asc' },
     });
+
+    return this.withDefaultPhotoMany(doctors);
   }
 
   // --- врач по doctorId ---
@@ -27,7 +42,8 @@ export class DoctorsService {
     });
 
     if (!doctor) throw new NotFoundException('Doctor not found');
-    return doctor;
+
+    return this.withDefaultPhoto(doctor);
   }
 
   // --- врач по userId ---
@@ -38,7 +54,8 @@ export class DoctorsService {
     });
 
     if (!doctor) throw new NotFoundException('Doctor not found');
-    return doctor;
+
+    return this.withDefaultPhoto(doctor);
   }
 
   // --- обновить фото ---
@@ -54,7 +71,7 @@ export class DoctorsService {
 
   // --- создать врача ---
   async createDoctor(dto) {
-    return this.prisma.doctor.create({
+    const doctor = await this.prisma.doctor.create({
       data: {
         userId: dto.userId,
         firstName: dto.firstName,
@@ -64,16 +81,21 @@ export class DoctorsService {
         isTherapist: dto.isTherapist ?? false,
         cabinetId: dto.cabinetId ?? null,
         phone: dto.phone ?? null,
+        photoUrl: dto.photoUrl ?? null,
       },
     });
+
+    return this.withDefaultPhoto(doctor);
   }
 
   // --- обновить врача ---
   async updateDoctor(id: number, dto) {
-    return this.prisma.doctor.update({
+    const doctor = await this.prisma.doctor.update({
       where: { id },
       data: dto,
     });
+
+    return this.withDefaultPhoto(doctor);
   }
 
   // --- деактивировать врача ---

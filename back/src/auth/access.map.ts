@@ -7,16 +7,17 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /auth/logout': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- DOCTORS ---
-  'GET /doctors': 'PUBLIC', // публичный список врачей
-  'GET /doctors/:id': 'PUBLIC', // публичная карточка врача
-  'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'], // врач по userId
-  'GET /doctors/photo': ['DOCTOR'], // фото врача
-  'POST /doctors/photo': ['DOCTOR', 'ADMIN'], // загрузка фото
-  'POST /doctors': ['ADMIN'], // создание врача
-  'PATCH /doctors/:id': ['ADMIN'], // обновление врача
-  'DELETE /doctors/:id': ['ADMIN'], // деактивация врача
-  'GET /doctors/:id/patients': ['DOCTOR', 'ADMIN'], // пациенты врача
-  'GET /doctors/:id/zones': ['DOCTOR', 'ADMIN'], // зоны терапевта
+  'GET /doctors': 'PUBLIC',
+  'GET /doctors/:id': 'PUBLIC',
+  'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'GET /doctors/photo': ['DOCTOR'],
+  'POST /doctors/photo': ['DOCTOR', 'ADMIN'],
+  'POST /doctors': ['ADMIN'],
+  'PATCH /doctors/:id': ['ADMIN'],
+  'DELETE /doctors/:id': ['ADMIN'],
+  'GET /doctors/:id/patients': ['DOCTOR', 'ADMIN'],
+  'GET /doctors/:id/zones': ['DOCTOR', 'ADMIN'],
+  'POST /doctors/:id/schedule/refresh': ['ADMIN'],
 
   // --- USERS ---
   'GET /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
@@ -40,6 +41,13 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'PATCH /cabinets/:id': ['ADMIN'],
   'DELETE /cabinets/:id': ['ADMIN'],
 
+  // --- SHIFTS (НОВЫЙ МОДУЛЬ) ---
+  'GET /shifts': ['DOCTOR', 'ADMIN'],
+  'GET /shifts/:id': ['DOCTOR', 'ADMIN'],
+  'POST /shifts': ['ADMIN'],
+  'PATCH /shifts/:id': ['ADMIN'],
+  'DELETE /shifts/:id': ['ADMIN'],
+
   // --- SCHEDULE ---
   'GET /schedule/doctor': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'GET /schedule/therapist/nearest': ['PATIENT'],
@@ -54,17 +62,9 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
 
   // --- APPOINTMENTS ---
   'POST /appointments/slot': ['PATIENT'],
-
-  // мои записи (пациент/врач)
   'GET /appointments': ['PATIENT', 'DOCTOR'],
-
-  // записи врача (только админ)
   'GET /appointments/doctor/:doctorId': ['ADMIN'],
-
-  // все записи (только админ)
   'GET /appointments/all': ['ADMIN'],
-
-  // удалить запись (только админ)
   'DELETE /appointments/:id': ['ADMIN'],
 
   // --- VISITS ---
@@ -77,4 +77,4 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /visit-files/:visitId': ['DOCTOR'],
   'GET /visit-files/:visitId': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'DELETE /visit-files/file/:fileId': ['DOCTOR', 'ADMIN'],
-};
+}

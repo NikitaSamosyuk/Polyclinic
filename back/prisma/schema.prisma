@@ -38,11 +38,11 @@ model Patient {
   gender             String?
   phone              String?
 
-  region             String      // область
-  city               String      // город
-  street             String      // улица
-  houseNumber        String      // дом
-  apartment          String?     // квартира
+  region             String
+  city               String
+  street             String
+  houseNumber        String
+  apartment          String?
 
   medicalCardNumber  String?  @unique
   primaryTherapistId Int?
@@ -81,6 +81,8 @@ model Doctor {
 
   addressZones TherapistAddressZone[]
   shifts       DoctorShift[]
+
+  scheduleTemplates DoctorScheduleTemplate[]
 }
 
 model DoctorShift {
@@ -102,15 +104,14 @@ model TherapistAddressZone {
   doctor    Doctor @relation(fields: [doctorId], references: [id])
 
   street    String
-  houses    String[]   // ["10", "12", "5-20"]
+  houses    String[]
 }
-
 
 model Cabinet {
   id                Int      @id @default(autoincrement())
   number            String   @unique
   floor             Int?
-  specialization    String
+  specialization    String   @default("Комбинированный")
   workingHoursStart String
   workingHoursEnd   String
   slotDuration      Int      @default(30)
@@ -168,4 +169,18 @@ model AttachedFile {
   uploadedAt  DateTime @default(now())
 
   visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+}
+
+model DoctorScheduleTemplate {
+  id        Int      @id @default(autoincrement())
+  doctorId  Int
+  dayOfWeek Int      // 1–5 (Пн–Пт)
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, dayOfWeek])
 }

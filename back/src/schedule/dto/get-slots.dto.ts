@@ -1,9 +1,9 @@
-import { IsDateString, IsInt } from 'class-validator';
+import { IsDateString, IsInt } from 'class-validator'
 
 export class GetSlotsDto {
   @IsInt()
-  doctorId: number;
+  doctorId!: number
 
   @IsDateString()
-  date: string;
+  date!: string // YYYY-MM-DD
 }

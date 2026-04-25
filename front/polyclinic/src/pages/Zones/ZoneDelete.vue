@@ -1,3 +1,19 @@
+<script setup>
+import api from '@/api/axios'
+
+const props = defineProps({ zone: Object })
+const emit = defineEmits(['close', 'deleted'])
+
+async function confirm() {
+  try {
+    await api.delete(`/therapist-zones/${props.zone.id}`)
+    emit('deleted', props.zone.id)
+  } catch (e) {
+    alert(e?.response?.data?.message || 'Ошибка удаления')
+  }
+}
+</script>
+
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
     <div class="bg-white p-6 rounded-xl w-[360px] shadow">
@@ -18,15 +34,3 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import api from '@/api/axios'
-
-const props = defineProps({ zone: Object })
-const emit = defineEmits(['close', 'deleted'])
-
-async function confirm() {
-  await api.delete(`/therapist-zones/${props.zone.id}`)
-  emit('deleted', props.zone.id)
-}
-</script>

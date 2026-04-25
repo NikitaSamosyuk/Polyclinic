@@ -11,6 +11,10 @@ const auth = useAuthStore()
       </li>
 
       <li>
+        <router-link to="/cabinets" class="text-gray-200 hover:text-white">Кабинеты</router-link>
+      </li>
+
+      <li>
         <router-link to="/doctors" class="text-gray-200 hover:text-white">Врачи</router-link>
       </li>
 
@@ -27,9 +31,9 @@ const auth = useAuthStore()
       </li>
 
       <li v-if="auth.user">
-        <router-link to="/my-appointments" class="text-gray-200 hover:text-white"
-          >Мои записи</router-link
-        >
+        <router-link to="/my-appointments" class="text-gray-200 hover:text-white">
+          Мои записи
+        </router-link>
       </li>
 
       <li class="ml-auto">

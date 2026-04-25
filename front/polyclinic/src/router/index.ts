@@ -13,9 +13,6 @@ const Appointment = () => import('@/pages/Appointment.vue')
 const MyAppointments = () => import('@/pages/MyAppointments.vue')
 const DoctorAppointments = () => import('@/pages/DoctorAppointments.vue')
 
-// Публичная карточка врача
-const DoctorCardPage = () => import('@/pages/Doctor/DoctorCardPage.vue')
-
 // Личные профили
 const DoctorProfile = () => import('@/pages/Profile/DoctorProfile.vue')
 const PatientProfile = () => import('@/pages/Profile/PatientProfile.vue')
@@ -23,6 +20,12 @@ const AdminProfile = () => import('@/pages/Profile/AdminProfile.vue')
 
 // Зоны терапевтов
 const Zones = () => import('@/pages/Zones.vue')
+
+// Кабинеты
+const Cabinets = () => import('@/pages/Cabinets.vue')
+
+// НОВОЕ — расписание
+const Schedule = () => import('@/pages/Schedule.vue')
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -35,12 +38,6 @@ const routes = [
 
   // --- DOCTORS ---
   { path: '/doctors', name: 'Doctors', component: Doctors },
-  {
-    path: '/doctors/:id',
-    name: 'DoctorCardPage',
-    component: DoctorCardPage,
-    props: true,
-  },
 
   // --- PATIENTS ---
   { path: '/patients', name: 'Patients', component: Patients },
@@ -51,7 +48,7 @@ const routes = [
     path: '/zones',
     name: 'Zones',
     component: Zones,
-    meta: { requiresAuth: true }, // зоны — админ/персонал
+    meta: { requiresAuth: true },
   },
 
   // --- APPOINTMENTS ---
@@ -83,6 +80,9 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
+  // --- CABINETS ---
+  { path: '/cabinets', name: 'Cabinets', component: Cabinets },
+
   // --- FALLBACK ---
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: Home },
 ]
@@ -96,10 +96,8 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   const token = localStorage.getItem('accessToken')
 
-  // Разрешаем страницу авторизации всегда
   if (to.name === 'Authorization') return true
 
-  // Инициализация auth
   if (!auth.ready) {
     if (token) {
       try {
@@ -109,7 +107,6 @@ router.beforeEach(async (to) => {
         auth.user = null
       }
     }
-
     auth.ready = true
   }
 
@@ -131,6 +128,5 @@ router.beforeEach(async (to) => {
 
   return true
 })
-
 
 export default router
