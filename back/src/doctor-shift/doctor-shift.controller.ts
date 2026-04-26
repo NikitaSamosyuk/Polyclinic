@@ -9,20 +9,19 @@ import {
   Post,
   Query,
   Req,
-} from '@nestjs/common'
-import { DoctorShiftService } from './doctor-shift.service'
-import { CreateShiftDto } from './dto/create-shift.dto'
-import { UpdateShiftDto } from './dto/update-shift.dto'
-import { Request } from 'express'
-import { DoctorShift } from '@prisma/client'
+} from '@nestjs/common';
+import { DoctorShiftService, ShiftWithRelations } from './doctor-shift.service';
+import { CreateShiftDto } from './dto/create-shift.dto';
+import { UpdateShiftDto } from './dto/update-shift.dto';
+import { Request } from 'express';
 
 interface AuthRequest extends Request {
   user?: {
-    sub: number
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT'
-    iat?: number
-    exp?: number
-  }
+    sub: number;
+    role: 'ADMIN' | 'DOCTOR' | 'PATIENT';
+    iat?: number;
+    exp?: number;
+  };
 }
 
 @Controller('shifts')
@@ -34,26 +33,29 @@ export class DoctorShiftController {
     @Query('doctorId') doctorId?: string,
     @Query('cabinetId') cabinetId?: string,
     @Query('date') date?: string,
-  ) {
+  ): Promise<ShiftWithRelations[]> {
     return this.shifts.getMany({
       doctorId: doctorId ? Number(doctorId) : undefined,
       cabinetId: cabinetId ? Number(cabinetId) : undefined,
       date,
-    })
+    });
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string) {
-    return this.shifts.getById(Number(id))
+  async getById(@Param('id') id: string): Promise<ShiftWithRelations> {
+    return this.shifts.getById(Number(id));
   }
 
   @Post()
-  async create(@Req() req: AuthRequest, @Body() dto: CreateShiftDto): Promise<DoctorShift> {
+  async create(
+    @Req() req: AuthRequest,
+    @Body() dto: CreateShiftDto,
+  ): Promise<ShiftWithRelations> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Недостаточно прав для создания смены')
+      throw new ForbiddenException('Недостаточно прав для создания смены');
     }
 
-    return this.shifts.create(dto)
+    return this.shifts.create(dto);
   }
 
   @Patch(':id')
@@ -61,20 +63,23 @@ export class DoctorShiftController {
     @Req() req: AuthRequest,
     @Param('id') id: string,
     @Body() dto: UpdateShiftDto,
-  ): Promise<DoctorShift> {
+  ): Promise<ShiftWithRelations> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Недостаточно прав для изменения смены')
+      throw new ForbiddenException('Недостаточно прав для изменения смены');
     }
 
-    return this.shifts.update(Number(id), dto)
+    return this.shifts.update(Number(id), dto);
   }
 
   @Delete(':id')
-  async delete(@Req() req: AuthRequest, @Param('id') id: string): Promise<DoctorShift> {
+  async delete(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+  ): Promise<ShiftWithRelations> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Недостаточно прав для удаления смены')
+      throw new ForbiddenException('Недостаточно прав для удаления смены');
     }
 
-    return this.shifts.delete(Number(id))
+    return this.shifts.delete(Number(id));
   }
 }

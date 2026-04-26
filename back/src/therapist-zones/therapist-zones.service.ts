@@ -108,23 +108,42 @@ export class TherapistZonesService {
     for (const z of zones) {
       if (z.street !== s) continue;
 
+      let matched = false;
+
       for (const rule of z.houses) {
-        // диапазон 5-20
-        if (rule.includes('-')) {
-          const [from, to] = rule.split('-').map(Number);
-          const num = Number(h);
-          if (num >= from && num <= to) {
-            matchedZones.push(z);
+        // Разбиваем правило на подправила: "1-12, 14-20" → ["1-12", "14-20"]
+        const parts = rule
+          .split(/[,;]/)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0);
+
+        for (const part of parts) {
+          // Диапазон: "5-20"
+          if (part.includes('-')) {
+            const [fromStr, toStr] = part.split('-').map((x) => x.trim());
+            const from = Number(fromStr);
+            const to = Number(toStr);
+            const num = Number(h);
+
+            if (!isNaN(from) && !isNaN(to) && !isNaN(num)) {
+              if (num >= from && num <= to) {
+                matched = true;
+                break;
+              }
+            }
+          }
+
+          // Точное совпадение: "22"
+          if (part === h) {
+            matched = true;
             break;
           }
         }
 
-        // точное совпадение дома
-        if (rule === h) {
-          matchedZones.push(z);
-          break;
-        }
+        if (matched) break;
       }
+
+      if (matched) matchedZones.push(z);
     }
 
     if (matchedZones.length === 0) return null;
@@ -141,12 +160,10 @@ export class TherapistZonesService {
 
     const loadMap = new Map<number, number>();
 
-    // загрузка по терапевтам
     for (const l of loads) {
       loadMap.set(l.primaryTherapistId, l._count.primaryTherapistId);
     }
 
-    // если у терапевта нет пациентов → загрузка = 0
     for (const id of therapistIds) {
       if (!loadMap.has(id)) loadMap.set(id, 0);
     }

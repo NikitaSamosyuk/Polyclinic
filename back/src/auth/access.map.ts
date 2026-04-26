@@ -13,7 +13,8 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'GET /doctors/photo': ['DOCTOR'],
   'POST /doctors/photo': ['DOCTOR', 'ADMIN'],
   'POST /doctors': ['ADMIN'],
-  'PATCH /doctors/:id': ['ADMIN'],
+  // ДОКТОР теперь тоже может PATCH, но мы ограничим поля в сервисе
+  'PATCH /doctors/:id': ['ADMIN', 'DOCTOR'],
   'DELETE /doctors/:id': ['ADMIN'],
   'GET /doctors/:id/patients': ['DOCTOR', 'ADMIN'],
   'GET /doctors/:id/zones': ['DOCTOR', 'ADMIN'],
@@ -41,7 +42,7 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'PATCH /cabinets/:id': ['ADMIN'],
   'DELETE /cabinets/:id': ['ADMIN'],
 
-  // --- SHIFTS (НОВЫЙ МОДУЛЬ) ---
+  // --- SHIFTS ---
   'GET /shifts': ['DOCTOR', 'ADMIN'],
   'GET /shifts/:id': ['DOCTOR', 'ADMIN'],
   'POST /shifts': ['ADMIN'],
@@ -55,16 +56,21 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
 
   // --- THERAPIST-ZONES ---
   'GET /therapist-zones': ['ADMIN', 'DOCTOR'],
-  'GET /therapist-zones/doctor/:doctorId': ['ADMIN', 'DOCTOR'],
+  'GET /therapist-zones/by-doctor/:doctorId': ['ADMIN', 'DOCTOR'],
   'POST /therapist-zones': ['ADMIN'],
   'PATCH /therapist-zones/:id': ['ADMIN'],
   'DELETE /therapist-zones/:id': ['ADMIN'],
 
   // --- APPOINTMENTS ---
+  'POST /appointments': ['PATIENT', 'ADMIN'],
   'POST /appointments/slot': ['PATIENT'],
+
+  'GET /appointments/my': ['PATIENT', 'DOCTOR'],
   'GET /appointments': ['PATIENT', 'DOCTOR'],
   'GET /appointments/doctor/:doctorId': ['ADMIN'],
   'GET /appointments/all': ['ADMIN'],
+
+  'DELETE /appointments/my/:id': ['PATIENT'],
   'DELETE /appointments/:id': ['ADMIN'],
 
   // --- VISITS ---
@@ -77,4 +83,4 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /visit-files/:visitId': ['DOCTOR'],
   'GET /visit-files/:visitId': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'DELETE /visit-files/file/:fileId': ['DOCTOR', 'ADMIN'],
-}
+};

@@ -1,26 +1,29 @@
-import { Injectable, OnModuleInit } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import { DoctorScheduleService } from '../doctor-schedule/doctor-schedule.service'
-import * as bcrypt from 'bcrypt'
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { DoctorScheduleService } from '../doctor-schedule/doctor-schedule.service';
+import { ScheduleService } from '../schedule/schedule.service';
+import * as bcrypt from 'bcrypt';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class DatabaseInitService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly schedule: DoctorScheduleService,
+    private readonly doctorSchedule: DoctorScheduleService,
+    private readonly schedule: ScheduleService,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const usersCount = await this.prisma.user.count()
+    const usersCount = await this.prisma.user.count();
 
     if (usersCount > 0) {
-      console.log('--- Тестовые данные уже существуют ---')
-      return
+      console.log('--- Тестовые данные уже существуют ---');
+      return;
     }
 
-    console.log('--- Создаём тестовые данные... ---')
+    console.log('--- Создаём тестовые данные... ---');
 
-    const adminPassword = await bcrypt.hash('admin123', 10)
+    const adminPassword = await bcrypt.hash('admin123', 10);
 
     // 1. Админ
     await this.prisma.user.create({
@@ -28,56 +31,132 @@ export class DatabaseInitService implements OnModuleInit {
         username: 'admin',
         email: 'admin@mail.com',
         passwordHash: adminPassword,
-        role: 'ADMIN',
+        role: Role.ADMIN,
       },
-    })
+    });
 
     // 2. Врачи (20)
     const doctorsList = [
-      { first: 'Иван', last: 'Иванов', mid: 'Иванович', spec: 'Терапевт' },
+      {
+        first: 'Владислав',
+        last: 'Лобачев',
+        mid: 'Игоревич',
+        spec: 'Терапевт',
+      },
       { first: 'Анна', last: 'Соколова', mid: 'Сергеевна', spec: 'Хирург' },
-
-      { first: 'Сергей', last: 'Сидоров', mid: 'Сергеевич', spec: 'Кардиолог' },
-      { first: 'Мария', last: 'Кузьмина', mid: 'Алексеевна', spec: 'Кардиолог' },
-
-      { first: 'Алексей', last: 'Смирнов', mid: 'Алексеевич', spec: 'Невролог' },
-      { first: 'Екатерина', last: 'Орлова', mid: 'Дмитриевна', spec: 'Невролог' },
-
+      {
+        first: 'Александр',
+        last: 'Абрамушкин',
+        mid: 'Александрович',
+        spec: 'Проктолог',
+      },
+      {
+        first: 'Мария',
+        last: 'Кузьмина',
+        mid: 'Алексеевна',
+        spec: 'Кардиолог',
+      },
+      {
+        first: 'Алексей',
+        last: 'Смирнов',
+        mid: 'Алексеевич',
+        spec: 'Невролог',
+      },
+      {
+        first: 'Екатерина',
+        last: 'Орлова',
+        mid: 'Дмитриевна',
+        spec: 'Невролог',
+      },
       { first: 'Ольга', last: 'Федорова', mid: 'Ильинична', spec: 'Терапевт' },
-      { first: 'Максим', last: 'Громов', mid: 'Антонович', spec: 'Офтальмолог' },
-
-      { first: 'Ирина', last: 'Лебедева', mid: 'Павловна', spec: 'ЛОР' },
-      { first: 'Павел', last: 'Захаров', mid: 'Павлович', spec: 'ЛОР' },
-
-      { first: 'Артём', last: 'Волков', mid: 'Артёмович', spec: 'Эндокринолог' },
-      { first: 'Татьяна', last: 'Морозова', mid: 'Ильинична', spec: 'Эндокринолог' },
-
-      { first: 'Роман', last: 'Николаев', mid: 'Романович', spec: 'Гинеколог' },
+      {
+        first: 'Максим',
+        last: 'Громов',
+        mid: 'Антонович',
+        spec: 'Офтальмолог',
+      },
+      {
+        first: 'Ирина',
+        last: 'Лебедева',
+        mid: 'Павловна',
+        spec: 'Отоларинголог',
+      },
+      {
+        first: 'Павел',
+        last: 'Захаров',
+        mid: 'Павлович',
+        spec: 'Отоларинголог',
+      },
+      {
+        first: 'Кузьма',
+        last: 'Распутин',
+        mid: 'Иванович',
+        spec: 'Дерматовенеролог',
+      },
+      {
+        first: 'Татьяна',
+        last: 'Морозова',
+        mid: 'Ильинична',
+        spec: 'Эндокринолог',
+      },
+      {
+        first: 'Владислав',
+        last: 'Лапенко',
+        mid: 'Владиславович',
+        spec: 'Уролог',
+      },
       { first: 'Алина', last: 'Беляева', mid: 'Кирилловна', spec: 'Гинеколог' },
-
-      { first: 'Кирилл', last: 'Денисов', mid: 'Владиславович', spec: 'Терапевт' },
-      { first: 'Виктория', last: 'Киселёва', mid: 'Арсеньевна', spec: 'Педиатр' },
-
-      { first: 'Матвей', last: 'Титов', mid: 'Матвеевич', spec: 'Дерматолог' },
-      { first: 'София', last: 'Савельева', mid: 'Марковна', spec: 'Дерматолог' },
-
-      { first: 'Тимофей', last: 'Рогов', mid: 'Тимофеевич', spec: 'Офтальмолог' },
-      { first: 'Елена', last: 'Семенова', mid: 'Игоревна', spec: 'Офтальмолог' },
-    ]
+      {
+        first: 'Кирилл',
+        last: 'Денисов',
+        mid: 'Владиславович',
+        spec: 'Терапевт',
+      },
+      {
+        first: 'Виктория',
+        last: 'Киселёва',
+        mid: 'Арсеньевна',
+        spec: 'Стоматолог',
+      },
+      {
+        first: 'Владимир',
+        last: 'Муромец',
+        mid: 'Святогорович',
+        spec: 'Дерматолог',
+      },
+      {
+        first: 'София',
+        last: 'Савельева',
+        mid: 'Марковна',
+        spec: 'Дерматолог',
+      },
+      {
+        first: 'Тимофей',
+        last: 'Рогов',
+        mid: 'Тимофеевич',
+        spec: 'Офтальмолог',
+      },
+      {
+        first: 'Елена',
+        last: 'Семенова',
+        mid: 'Игоревна',
+        spec: 'Офтальмолог',
+      },
+    ];
 
     await this.prisma.user.createMany({
       data: doctorsList.map((_, i) => ({
         username: `doctor${i + 1}`,
         email: `doctor${i + 1}@mail.com`,
         passwordHash: adminPassword,
-        role: 'DOCTOR',
+        role: Role.DOCTOR,
       })),
-    })
+    });
 
     const doctorUsers = await this.prisma.user.findMany({
-      where: { role: 'DOCTOR' },
+      where: { role: Role.DOCTOR },
       orderBy: { id: 'asc' },
-    })
+    });
 
     // 3. Кабинеты
     const cabinetsData = Array.from({ length: 10 }).map((_, i) => ({
@@ -86,13 +165,13 @@ export class DatabaseInitService implements OnModuleInit {
       workingHoursStart: i % 2 === 0 ? '08:00' : '09:00',
       workingHoursEnd: i % 2 === 0 ? '16:00' : '18:00',
       slotDuration: 15,
-    }))
+    }));
 
-    await this.prisma.cabinet.createMany({ data: cabinetsData })
+    await this.prisma.cabinet.createMany({ data: cabinetsData });
 
     const cabinets = await this.prisma.cabinet.findMany({
       orderBy: { id: 'asc' },
-    })
+    });
 
     // 4. Профили врачей
     const doctorProfilesData = doctorsList.map((d, i) => ({
@@ -104,62 +183,125 @@ export class DatabaseInitService implements OnModuleInit {
       isTherapist: d.spec === 'Терапевт',
       cabinetId: cabinets[Math.floor(i / 2)].id,
       photoUrl: `/uploads/doctors/doc${i + 1}.jpg`,
-    }))
+    }));
 
-    await this.prisma.doctor.createMany({ data: doctorProfilesData })
+    await this.prisma.doctor.createMany({ data: doctorProfilesData });
 
     const doctorProfiles = await this.prisma.doctor.findMany({
       orderBy: { id: 'asc' },
-    })
+    });
 
-    // 5. Шаблоны расписания = рабочее время кабинета (Пн–Пт)
+    // 5. Шаблоны расписания
     for (const doc of doctorProfiles) {
-      const cab = cabinets.find((c) => c.id === doc.cabinetId)!
+      const cab = cabinets.find((c) => c.id === doc.cabinetId)!;
       await this.prisma.doctorScheduleTemplate.createMany({
-        data: [
-          { doctorId: doc.id, dayOfWeek: 1, startTime: cab.workingHoursStart, endTime: cab.workingHoursEnd },
-          { doctorId: doc.id, dayOfWeek: 2, startTime: cab.workingHoursStart, endTime: cab.workingHoursEnd },
-          { doctorId: doc.id, dayOfWeek: 3, startTime: cab.workingHoursStart, endTime: cab.workingHoursEnd },
-          { doctorId: doc.id, dayOfWeek: 4, startTime: cab.workingHoursStart, endTime: cab.workingHoursEnd },
-          { doctorId: doc.id, dayOfWeek: 5, startTime: cab.workingHoursStart, endTime: cab.workingHoursEnd },
-        ],
-      })
+        data: [1, 2, 3, 4, 5].map((day) => ({
+          doctorId: doc.id,
+          dayOfWeek: day,
+          startTime: cab.workingHoursStart,
+          endTime: cab.workingHoursEnd,
+        })),
+      });
     }
 
-    // 6. Генерация смен на текущую неделю (Пн–Пт)
+    // 6. Генерация смен
     for (const doc of doctorProfiles) {
-      await this.schedule.generateShiftsForNextPeriod(doc.id)
+      await this.doctorSchedule.generateShiftsForNextPeriod(doc.id);
     }
 
-    // 7. Зоны терапевтов
-    const therapistDoctors = doctorProfiles.filter((d) => d.isTherapist)
+    // 7. УНИКАЛЬНЫЕ ЗОНЫ ТЕРАПЕВТОВ
+    const therapistDoctors = doctorProfiles.filter((d) => d.isTherapist);
 
-    const zonesData = therapistDoctors.flatMap((doc) => [
-      { doctorId: doc.id, street: 'ленина', houses: ['10', '12', '5-20'] },
-      { doctorId: doc.id, street: 'победы', houses: ['1', '3', '5'] },
-      { doctorId: doc.id, street: 'гагарина', houses: ['50', '52'] },
-    ])
+    const streetPool = [
+      'Ленина',
+      'Победы',
+      'Гагарина',
+      'Космонавтов',
+      'Молодёжная',
+      'Центральная',
+      'Парковая',
+      'Садовая',
+      'Заречная',
+      'Октябрьская',
+      'Мира',
+      'Строителей',
+      'Полевая',
+      'Берёзовая',
+      'Солнечная',
+      'Юбилейная',
+      'Школьная',
+      'Зелёная',
+      'Набережная',
+      'Лесная',
+    ];
 
-    await this.prisma.therapistAddressZone.createMany({ data: zonesData })
+    function generateHouses(): string[] {
+      const houses: string[] = [];
+      const count = 2 + Math.floor(Math.random() * 3);
+
+      for (let i = 0; i < count; i++) {
+        const type = Math.random();
+
+        if (type < 0.4) {
+          houses.push(String(1 + Math.floor(Math.random() * 120)));
+        } else if (type < 0.8) {
+          const start = 1 + Math.floor(Math.random() * 80);
+          const end = start + (2 + Math.floor(Math.random() * 10));
+          houses.push(`${start}-${end}`);
+        } else {
+          const base = 1 + Math.floor(Math.random() * 50);
+          houses.push(`${base}, ${base + 2}, ${base + 4}`);
+        }
+      }
+
+      return houses;
+    }
+
+    const zonesData = [];
+    let streetIndex = 0;
+
+    for (const doc of therapistDoctors) {
+      const zoneCount = 2 + Math.floor(Math.random() * 2);
+
+      for (let i = 0; i < zoneCount; i++) {
+        const street = streetPool[streetIndex % streetPool.length];
+        streetIndex++;
+
+        zonesData.push({
+          doctorId: doc.id,
+          street: street.toLowerCase(),
+          houses: generateHouses(),
+        });
+      }
+    }
+
+    await this.prisma.therapistAddressZone.createMany({ data: zonesData });
 
     // 8. Пациенты
     const patientUsersData = Array.from({ length: 100 }).map((_, i) => ({
       username: `patient${i + 1}`,
       email: `patient${i + 1}@mail.com`,
       passwordHash: adminPassword,
-      role: 'PATIENT',
-    }))
+      role: Role.PATIENT,
+    }));
 
-    await this.prisma.user.createMany({ data: patientUsersData })
+    await this.prisma.user.createMany({ data: patientUsersData });
 
     const patientUsers = await this.prisma.user.findMany({
-      where: { role: 'PATIENT' },
+      where: { role: Role.PATIENT },
       orderBy: { id: 'asc' },
-    })
+    });
 
-    const firstNames = ['Иван', 'Пётр', 'Сергей', 'Алексей', 'Дмитрий', 'Андрей']
-    const lastNames = ['Иванов', 'Петров', 'Сидоров', 'Смирнов', 'Кузнецов']
-    const middleNames = ['Иванович', 'Петрович', 'Сергеевич', 'Алексеевич']
+    const firstNames = [
+      'Иван',
+      'Пётр',
+      'Сергей',
+      'Алексей',
+      'Дмитрий',
+      'Андрей',
+    ];
+    const lastNames = ['Иванов', 'Петров', 'Сидоров', 'Смирнов', 'Кузнецов'];
+    const middleNames = ['Иванович', 'Петрович', 'Сергеевич', 'Алексеевич'];
 
     const patientProfilesData = patientUsers.map((u, i) => ({
       userId: u.id,
@@ -176,10 +318,59 @@ export class DatabaseInitService implements OnModuleInit {
       apartment: `${(i % 100) + 1}`,
       medicalCardNumber: `MC-${100 + i}`,
       primaryTherapistId: therapistDoctors[i % therapistDoctors.length].id,
-    }))
+    }));
 
-    await this.prisma.patient.createMany({ data: patientProfilesData })
+    await this.prisma.patient.createMany({ data: patientProfilesData });
 
-    console.log('--- Тестовые данные созданы! ---')
+    // 9. Случайные записи
+    console.log('--- Создаём тестовые записи пациентов ---');
+
+    const allDoctors = doctorProfiles;
+    const allPatients = await this.prisma.patient.findMany({
+      orderBy: { id: 'asc' },
+    });
+
+    function randomItem<T>(arr: T[]): T {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function randomDateWithin(days: number): string {
+      const d = new Date();
+      d.setDate(d.getDate() + Math.floor(Math.random() * days));
+      return d.toISOString().split('T')[0];
+    }
+
+    let created = 0;
+
+    for (let i = 0; i < 60; i++) {
+      const patient = randomItem(allPatients);
+      const doctor = randomItem(allDoctors);
+
+      const date = randomDateWithin(7);
+
+      const shift = await this.schedule.getDoctorShift(doctor.id, date);
+      if (!shift) continue;
+
+      const slots = await this.schedule.getSlotsForDoctor(doctor.id, date);
+      const freeSlot = slots.slots.find((s) => s.isFree);
+
+      if (!freeSlot) continue;
+
+      await this.prisma.appointment.create({
+        data: {
+          patientId: patient.id,
+          doctorId: doctor.id,
+          cabinetId: shift.cabinetId,
+          appointmentDate: new Date(date),
+          startTime: freeSlot.start,
+          endTime: freeSlot.end,
+        },
+      });
+
+      created++;
+    }
+
+    console.log(`--- Создано ${created} тестовых записей пациентов ---`);
+    console.log('--- Тестовые данные созданы! ---');
   }
 }

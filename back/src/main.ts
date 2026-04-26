@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import * as cookieParser from 'cookie-parser';
 import { CombinedAuthGuard } from './auth/guards/combined-auth.guard';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -39,4 +39,6 @@ async function bootstrap() {
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Bootstrap error:', err);
+});

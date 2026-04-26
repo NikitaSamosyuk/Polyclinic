@@ -1,4 +1,3 @@
-// src/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -14,7 +13,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UsersService } from './users.service';
-import { CombinedAuthGuard } from '../auth/guards/combined-auth.guard'; // проверь путь
+import { CombinedAuthGuard } from '../auth/guards/combined-auth.guard';
+
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 @UseGuards(CombinedAuthGuard)
@@ -46,22 +48,14 @@ export class UsersController {
   }
 
   @Patch()
-  async updateProfile(
-    @Req() req,
-    @Body() dto: { username?: string; email?: string },
-  ) {
-    const userId = req.user.sub;
-    return this.users.update(userId, dto);
+  async updateProfile(@Req() req, @Body() dto: UpdateUserDto) {
+    return this.users.update(req.user.sub, dto);
   }
 
   @Patch('password')
-  async changePassword(
-    @Req() req,
-    @Body() dto: { currentPassword: string; newPassword: string },
-  ) {
-    const userId = req.user.sub;
+  async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
     await this.users.changePassword(
-      userId,
+      req.user.sub,
       dto.currentPassword,
       dto.newPassword,
     );

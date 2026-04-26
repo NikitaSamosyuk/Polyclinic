@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { createCabinet, updateCabinet } from '@/api/cabinets'
 
 const props = defineProps<{
@@ -12,7 +12,6 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
-// --- Локальные поля ---
 const number = ref('')
 const specialization = ref('')
 const workingHoursStart = ref('08:00')

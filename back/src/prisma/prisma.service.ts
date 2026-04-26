@@ -1,24 +1,14 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService implements OnModuleInit, OnModuleDestroy {
-  private client: any;
-
-  public user: any;
-  public patient: any;
-  public doctor: any;
-  public cabinet: any;
-  public appointment: any;
-  public visit: any;
-  public attachedFile: any;
-
-  public doctorShift: any;
-  public therapistAddressZone: any;
-
-  // 🔥 ДОБАВЛЕНО — ЭТОГО НЕ ХВАТАЛО
-  public doctorScheduleTemplate: any;
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly pool: Pool;
 
   constructor() {
     const pool = new Pool({
@@ -27,34 +17,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
     const adapter = new PrismaPg(pool);
 
-    const { PrismaClient } = require('@prisma/client');
+    // ВАЖНО: вызываем super — теперь PrismaClient полностью типизирован
+    super({ adapter });
 
-    this.client = new PrismaClient({ adapter });
-
-    this.user = this.client.user;
-    this.patient = this.client.patient;
-    this.doctor = this.client.doctor;
-    this.cabinet = this.client.cabinet;
-    this.appointment = this.client.appointment;
-    this.visit = this.client.visit;
-    this.attachedFile = this.client.attachedFile;
-
-    this.doctorShift = this.client.doctorShift;
-    this.therapistAddressZone = this.client.therapistAddressZone;
-
-    // 🔥 ДОБАВЛЕНО — ПРОКСИРУЕМ МОДЕЛЬ
-    this.doctorScheduleTemplate = this.client.doctorScheduleTemplate;
+    this.pool = pool;
   }
 
-  $transaction(...args: any[]) {
-    return this.client.$transaction(...args);
+  async onModuleInit(): Promise<void> {
+    await this.$connect();
   }
 
-  async onModuleInit() {
-    await this.client.$connect();
-  }
-
-  async onModuleDestroy() {
-    await this.client.$disconnect();
+  async onModuleDestroy(): Promise<void> {
+    await this.$disconnect();
+    await this.pool.end();
   }
 }

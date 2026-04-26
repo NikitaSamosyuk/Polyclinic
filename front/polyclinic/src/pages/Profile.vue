@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
 import { usersApi } from '@/api/users'
 import { patientsApi } from '@/api/patients'
+import { doctorsApi } from '@/api/doctors'
 
 import DoctorProfile from '@/pages/Profile/DoctorProfile.vue'
 import PatientProfile from '@/pages/Profile/PatientProfile.vue'
@@ -14,6 +15,7 @@ const auth = useAuthStore()
 const loading = ref(true)
 const avatar = ref('')
 const patient = ref(null)
+const doctor = ref(null)
 const showPatientRegistration = ref(false)
 
 const editing = ref(false)
@@ -42,6 +44,18 @@ async function loadAvatar() {
 async function loadPatientProfile() {
   if (auth.user?.role === 'PATIENT') {
     patient.value = await patientsApi.me()
+  }
+}
+
+async function loadDoctorProfile() {
+  if (auth.user?.role === 'DOCTOR') {
+    const userId = auth.user.id
+    if (!userId) return
+
+    const res = await doctorsApi.getByUserId(userId)
+
+    // ВАЖНО: backend возвращает { doctor: {...} }
+    doctor.value = res.doctor ?? res
   }
 }
 
@@ -139,6 +153,7 @@ onMounted(async () => {
   if (auth.user) {
     await loadAvatar()
     await loadPatientProfile()
+    await loadDoctorProfile()
   }
   loading.value = false
 })
@@ -262,8 +277,8 @@ function onPatientRegistered() {
       </div>
 
       <!-- DOCTOR PROFILE -->
-      <div v-if="auth.user?.role === 'DOCTOR'" class="w-full max-w-3xl mt-10">
-        <DoctorProfile />
+      <div v-if="auth.user?.role === 'DOCTOR' && doctor" class="w-full max-w-3xl mt-10">
+        <DoctorProfile :doctor="doctor" @updated="doctor = $event" />
       </div>
 
       <!-- ADMIN PROFILE -->

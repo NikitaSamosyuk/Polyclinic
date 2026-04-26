@@ -1,7 +1,8 @@
 <script setup>
 const props = defineProps({
-  zones: Array,
-  opened: Boolean,
+  zones: { type: Array, required: true },
+  opened: { type: Boolean, required: true },
+  isAdmin: { type: Boolean, required: true },
 })
 
 const emit = defineEmits(['select', 'delete'])
@@ -16,7 +17,7 @@ const emit = defineEmits(['select', 'delete'])
           <p class="text-sm text-gray-600">Дома: {{ z.houses.join(', ') }}</p>
         </div>
 
-        <div class="flex gap-2">
+        <div v-if="isAdmin" class="flex gap-2">
           <button
             class="px-2 py-1 text-sm bg-blue-500 text-white rounded"
             @click.stop="emit('select', z)"

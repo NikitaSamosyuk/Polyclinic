@@ -9,8 +9,10 @@ const Profile = () => import('@/pages/Profile.vue')
 const Doctors = () => import('@/pages/Doctors.vue')
 const Patients = () => import('@/pages/Patients.vue')
 const PatientCard = () => import('@/components/PatientCard.vue')
-const Appointment = () => import('@/pages/Appointment.vue')
+
+const Appointments = () => import('@/pages/Appointments.vue')
 const MyAppointments = () => import('@/pages/MyAppointments.vue')
+
 const DoctorAppointments = () => import('@/pages/DoctorAppointments.vue')
 
 // Личные профили
@@ -24,9 +26,6 @@ const Zones = () => import('@/pages/Zones.vue')
 // Кабинеты
 const Cabinets = () => import('@/pages/Cabinets.vue')
 
-// НОВОЕ — расписание
-const Schedule = () => import('@/pages/Schedule.vue')
-
 const routes = [
   { path: '/', name: 'Home', component: Home },
 
@@ -34,7 +33,12 @@ const routes = [
   { path: '/register', name: 'Registration', component: Registration },
 
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
+
+  // --- APPOINTMENTS ---
+  { path: '/appointments', name: 'Appointments', component: Appointments, meta: { requiresAuth: true } },
   { path: '/my-appointments', name: 'MyAppointments', component: MyAppointments, meta: { requiresAuth: true } },
+
+  { path: '/doctor/:id/appointments', name: 'DoctorAppointments', component: DoctorAppointments, meta: { requiresAuth: true } },
 
   // --- DOCTORS ---
   { path: '/doctors', name: 'Doctors', component: Doctors },
@@ -44,41 +48,12 @@ const routes = [
   { path: '/patients/:id', name: 'PatientCard', component: PatientCard, props: true },
 
   // --- ZONES ---
-  {
-    path: '/zones',
-    name: 'Zones',
-    component: Zones,
-    meta: { requiresAuth: true },
-  },
-
-  // --- APPOINTMENTS ---
-  { path: '/appointment', name: 'Appointment', component: Appointment },
-  {
-    path: '/doctor/:id/appointments',
-    name: 'DoctorAppointments',
-    component: DoctorAppointments,
-    meta: { requiresAuth: true },
-  },
+  { path: '/zones', name: 'Zones', component: Zones, meta: { requiresAuth: true } },
 
   // --- PERSONAL PROFILES ---
-  {
-    path: '/doctor/profile',
-    name: 'DoctorProfile',
-    component: DoctorProfile,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/patient/profile',
-    name: 'PatientProfile',
-    component: PatientProfile,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/admin/profile',
-    name: 'AdminProfile',
-    component: AdminProfile,
-    meta: { requiresAuth: true },
-  },
+  { path: '/doctor/profile', name: 'DoctorProfile', component: DoctorProfile, meta: { requiresAuth: true } },
+  { path: '/patient/profile', name: 'PatientProfile', component: PatientProfile, meta: { requiresAuth: true } },
+  { path: '/admin/profile', name: 'AdminProfile', component: AdminProfile, meta: { requiresAuth: true } },
 
   // --- CABINETS ---
   { path: '/cabinets', name: 'Cabinets', component: Cabinets },

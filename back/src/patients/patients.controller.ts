@@ -20,7 +20,9 @@ export class PatientsController {
   @Post('register')
   async register(@Req() req, @Body() dto: RegisterPatientDto) {
     if (req.user.role !== 'PATIENT') {
-      throw new ForbiddenException('Only patients can register patient profile');
+      throw new ForbiddenException(
+        'Only patients can register patient profile',
+      );
     }
 
     return this.patients.createPatient(req.user.sub, dto);

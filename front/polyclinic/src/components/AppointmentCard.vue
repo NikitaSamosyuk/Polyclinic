@@ -1,87 +1,107 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-
 const props = defineProps<{
   appointment: any
+  isAdmin: boolean
+  isDoctor: boolean
+  isPatient: boolean
 }>()
 
-const router = useRouter()
+const emit = defineEmits<{
+  (e: 'edit', appt: any): void
+  (e: 'delete', appt: any): void
+  (e: 'open', appt: any): void
+  (e: 'open-doctor', doctor: any): void
+}>()
 
-function formatDateTime(value: string | Date | null) {
-  if (!value) return '—'
-  try {
-    const d = new Date(value)
-    return d.toLocaleString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return String(value)
-  }
+function open() {
+  emit('open', props.appointment)
 }
 
-function openPatient() {
-  const id = props.appointment.patient?.userId ?? props.appointment.patientId
-  if (!id) return
-  router.push({ name: 'PatientCard', params: { userId: String(id) } })
+function openDoctor(e: Event) {
+  e.stopPropagation()
+  emit('open-doctor', props.appointment.doctor)
 }
 </script>
 
 <template>
-  <div class="appointment-card">
-    <div class="time">
-      <div><strong>Дата:</strong> {{ formatDateTime(appointment.appointmentDate) }}</div>
-      <div><strong>Время:</strong> {{ formatDateTime(appointment.startTime) }}</div>
-    </div>
-
-    <div class="patient">
-      <strong>Пациент:</strong>
-      <span v-if="appointment.patient">
-        {{ appointment.patient.lastName }} {{ appointment.patient.firstName }}
+  <div
+    class="border rounded-xl shadow bg-white overflow-hidden cursor-pointer hover:shadow-lg transition"
+    @click="open"
+  >
+    <!-- Шапка талона -->
+    <div class="bg-blue-700 text-white px-4 py-3 flex justify-between items-center">
+      <span class="font-semibold text-lg">
+        {{ new Date(appointment.appointmentDate).toLocaleDateString('ru-RU') }}
       </span>
-      <span v-else>—</span>
+
+      <span class="font-semibold text-lg">
+        {{ appointment.startTime.slice(11, 16) }}–{{ appointment.endTime.slice(11, 16) }}
+      </span>
     </div>
 
-    <button v-if="appointment.patient" class="open-btn" @click="openPatient">
-      Открыть карточку пациента
-    </button>
+    <!-- Контент -->
+    <div class="p-4 space-y-4 text-gray-900">
+      <!-- Врач -->
+      <div class="flex justify-between items-start">
+        <div class="flex items-start gap-2">
+          <span class="text-xl">👨‍⚕️</span>
+          <div>
+            <p class="font-semibold text-base leading-tight">
+              {{ appointment.doctor.lastName }}
+              {{ appointment.doctor.firstName }}
+              <span v-if="appointment.doctor.middleName">
+                {{ appointment.doctor.middleName }}
+              </span>
+            </p>
+            <p class="text-sm text-gray-600">
+              {{ appointment.doctor.specialization }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Кнопка "Открыть врача" -->
+        <button
+          class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+          @click="openDoctor"
+        >
+          Открыть
+        </button>
+      </div>
+
+      <!-- Пациент -->
+      <div v-if="isAdmin || isDoctor" class="flex items-start gap-2">
+        <span class="text-xl">🧍</span>
+        <p class="font-medium leading-tight">
+          {{ appointment.patient.lastName }}
+          {{ appointment.patient.firstName }}
+          <span v-if="appointment.patient.middleName">
+            {{ appointment.patient.middleName }}
+          </span>
+        </p>
+      </div>
+
+      <!-- Кабинет -->
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🏥</span>
+        <p class="font-medium">Кабинет №{{ appointment.cabinet.number }}</p>
+      </div>
+    </div>
+
+    <!-- Кнопки админа -->
+    <div v-if="isAdmin" class="px-4 py-2 border-t flex gap-3 bg-gray-50" @click.stop>
+      <button
+        class="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+        @click="emit('edit', appointment)"
+      >
+        Редактировать
+      </button>
+
+      <button
+        class="px-3 py-1 bg-red-600 text-white rounded text-sm"
+        @click="emit('delete', appointment)"
+      >
+        Удалить
+      </button>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.appointment-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.time {
-  font-size: 14px;
-}
-
-.patient {
-  font-size: 14px;
-}
-
-.open-btn {
-  margin-top: 6px;
-  padding: 6px 10px;
-  background: #2b6cb0;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.open-btn:hover {
-  background: #1e4f80;
-}
-</style>
