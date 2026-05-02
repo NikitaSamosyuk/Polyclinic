@@ -11,7 +11,6 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 const selectedZone = ref<any | null>(null)
-const openedDoctorId = ref<number | null>(null)
 
 const showCreate = ref(false)
 const showEdit = ref(false)
@@ -23,8 +22,6 @@ const selectedDoctorId = ref<number | null>(null)
 const searchInput = ref('')
 const searchQuery = ref('')
 const selectedSpecialization = ref('Специальность')
-
-// Глобальный фильтр по улице
 const selectedStreet = ref('Все улицы')
 
 const currentPage = ref(1)
@@ -55,7 +52,6 @@ const specializations = computed(() => {
   return ['Специальность', ...Array.from(set)]
 })
 
-// список всех улиц (глобальный селект)
 const streets = computed(() => {
   const set = new Set<string>()
   zones.value.forEach((z: any) => set.add(z.street))
@@ -78,7 +74,6 @@ const grouped = computed(() => {
 
   let arr = Array.from(map.values())
 
-  // фильтр по ФИО
   if (searchQuery.value) {
     arr = arr.filter((d) => {
       const full =
@@ -87,12 +82,10 @@ const grouped = computed(() => {
     })
   }
 
-  // фильтр по специальности
   if (selectedSpecialization.value !== 'Специальность') {
     arr = arr.filter((d) => d.doctor.specialization === selectedSpecialization.value)
   }
 
-  // глобальный фильтр по улице
   if (selectedStreet.value !== 'Все улицы') {
     arr = arr
       .map((d) => ({
@@ -112,8 +105,15 @@ const paginated = computed(() => {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(grouped.value.length / perPage)))
 
-function toggleDoctor(d: { doctorId: number }) {
-  openedDoctorId.value = openedDoctorId.value === d.doctorId ? null : d.doctorId
+const openedDoctorIds = ref<number[]>([])
+
+function toggleDoctor(d: any) {
+  const id = d.doctorId
+  if (openedDoctorIds.value.includes(id)) {
+    openedDoctorIds.value = openedDoctorIds.value.filter((x) => x !== id)
+  } else {
+    openedDoctorIds.value = [...openedDoctorIds.value, id]
+  }
 }
 
 function selectZone(z: any) {
@@ -151,98 +151,101 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Зоны терапевтов</h1>
+  <div class="max-w-7xl mx-auto p-8 flex flex-col gap-10">
+    <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight">Зоны терапевтов</h1>
 
-    <!-- ПОИСК + ФИЛЬТРЫ -->
-    <div class="flex flex-row justify-between items-start gap-4 mb-6">
-      <!-- Поиск по ФИО -->
-      <div class="relative flex-1">
-        <input
-          v-model="searchInput"
-          @keyup.enter="applySearch"
-          class="w-full px-4 py-2 border rounded-lg"
-          placeholder="Поиск по ФИО врача"
-        />
-        <button
-          @click="applySearch"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
-        >
-          🔍
-        </button>
-      </div>
-
-      <!-- Специальность + улица -->
-      <div class="flex flex-col items-start gap-2">
-        <select
-          v-model="selectedSpecialization"
-          @change="applySearch"
-          class="px-4 py-2 border rounded-lg bg-white"
-        >
-          <option v-for="s in specializations" :key="s" :value="s">
-            {{ s }}
-          </option>
-        </select>
-
-        <select v-model="selectedStreet" class="px-4 py-2 border rounded-lg bg-white text-sm">
-          <option v-for="s in streets" :key="s" :value="s">
-            {{ s }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Создание зоны только для админа -->
-      <button
-        v-if="isAdmin"
-        @click="showCreate = true"
-        class="px-4 py-2 bg-green-600 text-white rounded-lg"
-      >
-        + Создать зону
-      </button>
-    </div>
-
-    <div v-if="loading" class="text-gray-600">Загрузка...</div>
-    <div v-else-if="error" class="text-red-600">{{ error }}</div>
-
-    <!-- СПИСОК ВРАЧЕЙ + ИХ ЗОНЫ -->
-    <div v-else class="space-y-4">
-      <div
-        v-for="d in paginated"
-        :key="d.doctorId"
-        class="p-4 bg-white border rounded-lg shadow hover:shadow-md"
-      >
-        <!-- Шапка карточки врача -->
-        <div class="flex justify-between items-center mb-2">
-          <p class="font-semibold text-lg text-gray-800">
-            {{ d.doctor.lastName }} {{ d.doctor.firstName }}
-            <span v-if="d.doctor.middleName">
-              {{ d.doctor.middleName }}
-            </span>
-          </p>
+    <!-- Поиск + фильтры -->
+    <div class="bg-white border border-teal-400 rounded-xl shadow p-6 flex flex-col gap-6">
+      <div class="flex flex-col md:flex-row gap-6">
+        <!-- Поиск -->
+        <div class="relative flex-1">
+          <input
+            v-model="searchInput"
+            @keyup.enter="applySearch"
+            class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+            placeholder="Поиск по ФИО врача"
+          />
 
           <button
-            @click.stop="openDoctorModal(d.doctor)"
-            class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+            @click="applySearch"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100 transition"
           >
-            Открыть
+            <img src="@/assets/look.png" alt="search" class="w-6 h-6 object-contain" />
           </button>
         </div>
 
-        <p class="text-gray-600 text-sm mb-2">
-          {{ d.doctor.specialization }}
-        </p>
+        <!-- Фильтры -->
+        <div class="flex flex-row gap-4">
+          <select
+            v-model="selectedSpecialization"
+            @change="applySearch"
+            class="px-4 py-3 border border-teal-400 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-teal-500"
+          >
+            <option v-for="s in specializations" :key="s" :value="s">
+              {{ s }}
+            </option>
+          </select>
 
-        <!-- Тоггл зон -->
-        <div class="cursor-pointer" @click="toggleDoctor(d)">
-          <p class="text-sm text-blue-700">
-            {{ openedDoctorId === d.doctorId ? 'Скрыть зоны' : 'Показать зоны' }}
-          </p>
+          <select
+            v-model="selectedStreet"
+            @change="applySearch"
+            class="px-4 py-3 border border-teal-400 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-teal-500"
+          >
+            <option v-for="s in streets" :key="s" :value="s">
+              {{ s }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Создать зону -->
+        <button
+          v-if="isAdmin"
+          @click="showCreate = true"
+          class="px-5 py-3 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 transition"
+        >
+          + Создать зону
+        </button>
+      </div>
+    </div>
+
+    <!-- Список врачей -->
+    <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
+    <div v-else-if="error" class="text-red-600 text-lg text-center py-10">{{ error }}</div>
+
+    <div v-else class="flex flex-col gap-8">
+      <div
+        v-for="d in paginated"
+        :key="d.doctorId"
+        class="bg-white border border-teal-300 rounded-xl shadow p-6 flex flex-col gap-4 cursor-pointer hover:shadow-lg transition"
+        @click="toggleDoctor(d)"
+      >
+        <!-- Врач -->
+        <div class="flex items-start gap-3">
+          <img src="@/assets/doctor-icon.png" class="w-7 h-7 object-contain" />
+
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <p class="font-semibold text-lg text-gray-900 leading-tight">
+                {{ d.doctor.lastName }} {{ d.doctor.firstName }}
+                <span v-if="d.doctor.middleName">{{ d.doctor.middleName }}</span>
+              </p>
+
+              <button
+                @click.stop="openDoctorModal(d.doctor)"
+                class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
+              >
+                Открыть
+              </button>
+            </div>
+
+            <p class="text-sm text-gray-600">{{ d.doctor.specialization }}</p>
+          </div>
         </div>
 
         <!-- Зоны врача -->
         <ZoneCard
           :zones="d.zones"
-          :opened="openedDoctorId === d.doctorId"
+          :opened="openedDoctorIds.includes(d.doctorId)"
           :isAdmin="isAdmin"
           @select="selectZone"
           @delete="deleteZone"
@@ -251,13 +254,17 @@ onMounted(load)
     </div>
 
     <!-- Пагинация -->
-    <div v-if="totalPages > 1" class="flex justify-center mt-6 gap-3">
+    <div v-if="totalPages > 1" class="flex justify-center mt-10 gap-2">
       <button
         v-for="page in totalPages"
         :key="page"
         @click="currentPage = page"
-        class="px-3 py-1 rounded border"
-        :class="page === currentPage ? 'bg-blue-600 text-white' : 'bg-white'"
+        class="px-4 py-2 rounded-lg border border-teal-300 shadow-sm transition"
+        :class="
+          page === currentPage
+            ? 'bg-teal-600 text-white'
+            : 'bg-white hover:bg-teal-50 text-teal-800'
+        "
       >
         {{ page }}
       </button>

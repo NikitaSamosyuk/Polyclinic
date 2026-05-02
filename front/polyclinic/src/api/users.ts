@@ -2,9 +2,12 @@
 import api from './axios'
 
 export const usersApi = {
-  getAvatar: () => api.get('/users/avatar'),
+  // Аватар
+  getAvatar() {
+    return api.get('/users/avatar')
+  },
 
-  uploadAvatar: (file: File) => {
+  uploadAvatar(file: File) {
     const form = new FormData()
     form.append('avatar', file)
     return api.post('/users/avatar', form, {
@@ -12,14 +15,22 @@ export const usersApi = {
     })
   },
 
-  updateProfile: (payload: { username?: string; email?: string }) => {
+  // Профиль пользователя
+  updateProfile(payload: { username?: string; email?: string }) {
     return api.patch('/users', payload)
   },
 
-  // ✔ отправляем оба поля, как требует backend
-  changePassword: (payload: { currentPassword: string; newPassword: string }) => {
+  changePassword(payload: { currentPassword: string; newPassword: string }) {
     return api.patch('/users/password', payload)
   },
 
-  getMePatient: () => api.get('/patients/me'),
+  // Текущий пациент
+  getMePatient() {
+    return api.get('/patients/me')
+  },
+
+  // 🔥 СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ВРАЧА
+  createDoctorUser(payload: { username: string; email: string; password: string }) {
+    return api.post('/users/doctor', payload)
+  },
 }

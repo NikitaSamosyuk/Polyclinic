@@ -1,6 +1,13 @@
+// src/api/doctors.ts
 import api from './axios'
 
 export const doctorsApi = {
+  // Создать врача (после создания user)
+  async create(data: any) {
+    const res = await api.post('/doctors', data)
+    return res.data
+  },
+
   // Получить врача по userId
   async getByUserId(userId: number) {
     const res = await api.get(`/doctors/user/${userId}`)
@@ -13,13 +20,32 @@ export const doctorsApi = {
     return res.data.doctor ?? res.data
   },
 
-  // Получить всех врачей
-  async getAll() {
-    const res = await api.get('/doctors')
+  // Активные врачи
+  async getAllActive() {
+    const res = await api.get('/doctors/active')
     return res.data
   },
 
-  // Обновить данные врача (ФИО)
+  // Неактивные врачи
+  async getAllInactive() {
+    const res = await api.get('/doctors/inactive')
+    return res.data
+  },
+
+  // Все врачи (активные + неактивные)
+  async getAll() {
+    const [active, inactive] = await Promise.all([
+      this.getAllActive().catch(() => []),
+      this.getAllInactive().catch(() => []),
+    ])
+
+    const a = Array.isArray(active) ? active : []
+    const i = Array.isArray(inactive) ? inactive : []
+
+    return [...a, ...i]
+  },
+
+  // Обновить врача
   async update(id: number, data: any) {
     const res = await api.patch(`/doctors/${id}`, data)
     return res.data.doctor ?? res.data
@@ -32,9 +58,21 @@ export const doctorsApi = {
     })
     return res.data.doctor ?? res.data
   },
+
+  // Деактивация
+  async deactivate(id: number) {
+    const res = await api.patch(`/doctors/${id}/deactivate`, {})
+    return res.data.doctor ?? res.data
+  },
+
+  // Активация
+  async activate(id: number) {
+    const res = await api.patch(`/doctors/${id}/activate`, {})
+    return res.data.doctor ?? res.data
+  },
 }
 
-// Алиас
+// Для публичной страницы врачей
 export function getDoctors() {
-  return doctorsApi.getAll()
+  return doctorsApi.getAllActive()
 }

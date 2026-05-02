@@ -42,3 +42,14 @@ export async function deactivateCabinet(id: number) {
   const res = await api.delete(`/cabinets/${id}`)
   return res.data
 }
+
+/* ---------------------------------------------------------
+   ДОБАВЛЯЮ cabinetsApi, чтобы модалки могли его импортировать
+--------------------------------------------------------- */
+export const cabinetsApi = {
+  getAll: getCabinets,
+  getById: getCabinet,
+  create: createCabinet,
+  update: updateCabinet,
+  deactivate: deactivateCabinet,
+}

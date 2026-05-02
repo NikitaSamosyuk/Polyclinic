@@ -1,67 +1,54 @@
 import api from './axios'
 
+export interface UpdateAppointmentPayload {
+  doctorId?: number
+  date?: string
+  startTime?: string
+  reason?: string
+}
+
 export const appointmentsApi = {
-  // Все записи (только админ)
-  getAll() {
-    return api.get('/appointments/all').then(res => res.data)
+  async getAll() {
+    const res = await api.get('/appointments/all')
+    return res.data
   },
 
-  // Мои записи (доктор или пациент)
-  getMy() {
-    return api.get('/appointments/my').then(res => res.data)
+  async getMy() {
+    const res = await api.get('/appointments/my')
+    return res.data
   },
 
-  // Записи конкретного врача
-  getByDoctorId(id) {
-    return api.get(`/appointments/doctor/${id}`).then(res => res.data)
+  async getByDoctorId(id: number) {
+    const res = await api.get(`/appointments/doctor/${id}`)
+    return res.data
   },
 
-  // Записи конкретного пациента
-  getByPatientId(id) {
-    return api.get(`/appointments/patient/${id}`).then(res => res.data)
+  async create(data: any) {
+    const res = await api.post('/appointments', data)
+    return res.data
   },
 
-  // Создать запись (пациент)
-  create(data) {
-    return api.post('/appointments', data).then(res => res.data)
+  async update(id: number, data: UpdateAppointmentPayload) {
+    const res = await api.patch(`/appointments/${id}`, data)
+    return res.data
   },
 
-  // Обновить запись (админ)
-  update(id, data) {
-    return api.patch(`/appointments/${id}`, data).then(res => res.data)
+  async delete(id: number) {
+    const res = await api.delete(`/appointments/${id}`)
+    return res.data
   },
 
-  // Удалить запись (админ)
-  delete(id) {
-    return api.delete(`/appointments/${id}`).then(res => res.data)
+  async deleteMy(id: number) {
+    const res = await api.delete(`/appointments/my/${id}`)
+    return res.data
   },
 }
 
-// Алиасы
-export function getMyAppointments() {
-  return appointmentsApi.getMy()
-}
-
-export function getAllAppointments() {
-  return appointmentsApi.getAll()
-}
-
-export function getAppointmentsByDoctor(id) {
-  return appointmentsApi.getByDoctorId(id)
-}
-
-export function getAppointmentsByPatient(id) {
-  return appointmentsApi.getByPatientId(id)
-}
-
-export function createAppointment(data) {
-  return appointmentsApi.create(data)
-}
-
-export function updateAppointment(id, data) {
-  return appointmentsApi.update(id, data)
-}
-
-export function deleteAppointment(id) {
-  return appointmentsApi.delete(id)
-}
+export const getMyAppointments = () => appointmentsApi.getMy()
+export const getAllAppointments = () => appointmentsApi.getAll()
+export const getAppointmentsByDoctor = (id: number) => appointmentsApi.getByDoctorId(id)
+export const createAppointment = (data: any) => appointmentsApi.create(data)
+export const updateAppointment = (id: number, data: UpdateAppointmentPayload) =>
+  appointmentsApi.update(id, data)
+export const deleteAppointment = (id: number) => appointmentsApi.delete(id)
+export const deleteMyAppointment = (id: number) => appointmentsApi.deleteMy(id)

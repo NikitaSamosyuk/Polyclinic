@@ -7,32 +7,42 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /auth/logout': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- DOCTORS ---
-  'GET /doctors': 'PUBLIC',
+  'GET /doctors/active': ['ADMIN', 'DOCTOR', 'PATIENT'], // публичный список активных врачей
+  'GET /doctors/inactive': ['ADMIN'], // только админ
+
   'GET /doctors/:id': 'PUBLIC',
   'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'],
+
   'GET /doctors/photo': ['DOCTOR'],
   'POST /doctors/photo': ['DOCTOR', 'ADMIN'],
+
   'POST /doctors': ['ADMIN'],
-  // ДОКТОР теперь тоже может PATCH, но мы ограничим поля в сервисе
   'PATCH /doctors/:id': ['ADMIN', 'DOCTOR'],
-  'DELETE /doctors/:id': ['ADMIN'],
-  'GET /doctors/:id/patients': ['DOCTOR', 'ADMIN'],
-  'GET /doctors/:id/zones': ['DOCTOR', 'ADMIN'],
-  'POST /doctors/:id/schedule/refresh': ['ADMIN'],
+
+  // деактивация / активация врача
+  'PATCH /doctors/:id/deactivate': ['ADMIN'],
+  'PATCH /doctors/:id/activate': ['ADMIN'],
 
   // --- USERS ---
   'GET /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'POST /users/avatar': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'PATCH /users': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'PATCH /users/password': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'POST /users/doctor': ['ADMIN'],
 
   // --- PATIENTS ---
   'POST /patients/register': ['PATIENT'],
   'GET /patients/me': ['PATIENT'],
+
   'GET /patients': ['DOCTOR', 'ADMIN'],
   'GET /patients/:id': ['DOCTOR', 'ADMIN'],
+
   'PATCH /patients/:id': ['PATIENT', 'ADMIN'],
-  'DELETE /patients/:id': ['ADMIN'],
+
+  // деактивация / активация пациента
+  'PATCH /patients/:id/deactivate': ['ADMIN'],
+  'PATCH /patients/:id/activate': ['ADMIN'],
+
   'GET /patients/search/query': ['DOCTOR', 'ADMIN'],
 
   // --- CABINETS ---
@@ -64,23 +74,22 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   // --- APPOINTMENTS ---
   'POST /appointments': ['PATIENT', 'ADMIN'],
   'POST /appointments/slot': ['PATIENT'],
-
   'GET /appointments/my': ['PATIENT', 'DOCTOR'],
-  'GET /appointments': ['PATIENT', 'DOCTOR'],
+  'GET /appointments': ['ADMIN'],
   'GET /appointments/doctor/:doctorId': ['ADMIN'],
   'GET /appointments/all': ['ADMIN'],
-
   'DELETE /appointments/my/:id': ['PATIENT'],
   'DELETE /appointments/:id': ['ADMIN'],
 
   // --- VISITS ---
-  'POST /visits': ['DOCTOR'],
-  'PATCH /visits/:id': ['DOCTOR'],
-  'GET /visits': ['PATIENT', 'DOCTOR'],
-  'GET /visits/:id': ['PATIENT', 'DOCTOR'],
+  'POST /visits': ['DOCTOR', 'ADMIN'],
+  'PATCH /visits/:id': ['DOCTOR', 'ADMIN'],
+  'DELETE /visits/:id': ['DOCTOR', 'ADMIN'],
+  'GET /visits': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'GET /visits/:id': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- VISIT FILES ---
-  'POST /visit-files/:visitId': ['DOCTOR'],
+  'POST /visit-files/:visitId': ['DOCTOR', 'ADMIN'],
   'GET /visit-files/:visitId': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'DELETE /visit-files/file/:fileId': ['DOCTOR', 'ADMIN'],
 };

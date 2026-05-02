@@ -1,29 +1,26 @@
-import { IsInt, IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateVisitDto {
   @IsInt()
-  appointmentId: number;
+  appointmentId!: number;
 
-  @IsDateString()
-  visitDatetime: string;
-
-  @IsString()
   @IsOptional()
+  @IsString()
   complaints?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   diagnosis?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   examination?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   treatment?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   recommendations?: string;
 }

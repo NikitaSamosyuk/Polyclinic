@@ -42,7 +42,11 @@ export class DoctorsService {
     return doctors.map((d) => this.withDefaultPhoto(d) as T);
   }
 
-  // --- список активных врачей ---
+  // ============================================================
+  // СПИСКИ ВРАЧЕЙ
+  // ============================================================
+
+  // Активные врачи
   async getAllActive(): Promise<DoctorWithRelations[]> {
     const doctors = await this.prisma.doctor.findMany({
       where: { user: { isActive: true } },
@@ -53,7 +57,21 @@ export class DoctorsService {
     return this.withDefaultPhotoMany(doctors);
   }
 
-  // --- врач по doctorId ---
+  // Деактивированные врачи
+  async getAllInactive(): Promise<DoctorWithRelations[]> {
+    const doctors = await this.prisma.doctor.findMany({
+      where: { user: { isActive: false } },
+      include: { cabinet: true, user: true },
+      orderBy: { lastName: 'asc' },
+    });
+
+    return this.withDefaultPhotoMany(doctors);
+  }
+
+  // ============================================================
+  // ПОЛУЧЕНИЕ ВРАЧА
+  // ============================================================
+
   async getById(id: number): Promise<DoctorWithRelations> {
     const doctor = await this.prisma.doctor.findUnique({
       where: { id },
@@ -65,7 +83,6 @@ export class DoctorsService {
     return this.withDefaultPhoto(doctor)!;
   }
 
-  // --- врач по userId ---
   async getByUserId(userId: number): Promise<DoctorWithRelations> {
     const doctor = await this.prisma.doctor.findFirst({
       where: { userId },
@@ -77,7 +94,10 @@ export class DoctorsService {
     return this.withDefaultPhoto(doctor)!;
   }
 
-  // --- обновить фото (только фото, по userId) ---
+  // ============================================================
+  // ФОТО
+  // ============================================================
+
   async updatePhoto(userId: number, photoUrl: string): Promise<Doctor> {
     const doctor = await this.prisma.doctor.findFirst({ where: { userId } });
     if (!doctor) throw new NotFoundException('Doctor not found');
@@ -90,7 +110,10 @@ export class DoctorsService {
     return this.withDefaultPhoto(updated)!;
   }
 
-  // --- создать врача ---
+  // ============================================================
+  // СОЗДАНИЕ
+  // ============================================================
+
   async createDoctor(dto: CreateDoctorDto): Promise<Doctor> {
     const doctor = await this.prisma.doctor.create({
       data: {
@@ -109,14 +132,16 @@ export class DoctorsService {
     return this.withDefaultPhoto(doctor)!;
   }
 
-  // --- обновить врача (ограничено для DOCTOR: только ФИО) ---
+  // ============================================================
+  // ОБНОВЛЕНИЕ
+  // ============================================================
+
   async updateDoctor(
     id: number,
     dto: UpdateDoctorDto,
     actorRole: 'ADMIN' | 'DOCTOR' | 'PATIENT',
     actorUserId?: number,
   ): Promise<Doctor> {
-    // --- DOCTOR может менять только себя и только ФИО ---
     if (actorRole === 'DOCTOR') {
       const doctor = await this.prisma.doctor.findFirst({
         where: { userId: actorUserId },
@@ -139,7 +164,6 @@ export class DoctorsService {
       return this.withDefaultPhoto(updated)!;
     }
 
-    // --- ADMIN может менять всё ---
     const updated = await this.prisma.doctor.update({
       where: { id },
       data: dto,
@@ -148,7 +172,10 @@ export class DoctorsService {
     return this.withDefaultPhoto(updated)!;
   }
 
-  // --- деактивировать врача ---
+  // ============================================================
+  // ДЕАКТИВАЦИЯ / АКТИВАЦИЯ
+  // ============================================================
+
   async deactivateDoctor(id: number): Promise<User> {
     const doctor = await this.prisma.doctor.findUnique({ where: { id } });
     if (!doctor) throw new NotFoundException('Doctor not found');
@@ -159,7 +186,20 @@ export class DoctorsService {
     });
   }
 
-  // --- пациенты врача ---
+  async activateDoctor(id: number): Promise<User> {
+    const doctor = await this.prisma.doctor.findUnique({ where: { id } });
+    if (!doctor) throw new NotFoundException('Doctor not found');
+
+    return this.prisma.user.update({
+      where: { id: doctor.userId },
+      data: { isActive: true },
+    });
+  }
+
+  // ============================================================
+  // ПАЦИЕНТЫ ВРАЧА
+  // ============================================================
+
   async getDoctorPatients(
     doctorId: number,
     actorUserId: number,
@@ -188,7 +228,10 @@ export class DoctorsService {
     });
   }
 
-  // --- зоны терапевта ---
+  // ============================================================
+  // ЗОНЫ ТЕРАПЕВТА
+  // ============================================================
+
   async getDoctorZones(
     doctorId: number,
     actorUserId: number,

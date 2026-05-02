@@ -3,6 +3,7 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -16,6 +17,7 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  // --- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ-ПАЦИЕНТА ---
   async createUser(data: {
     email: string;
     username: string;
@@ -33,17 +35,21 @@ export class UsersService {
     });
   }
 
-  // 🔥 Новый метод — создание пользователя-врача
+  // --- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ-ДОКТОРА ---
   async createDoctorUser(data: {
     email: string;
     username: string;
     password: string;
   }) {
-    const exists = await this.prisma.user.findUnique({
+    // Проверка email
+    const emailExists = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
+    if (emailExists) {
+      throw new BadRequestException('Email already taken');
+    }
 
-    if (exists) throw new BadRequestException('Email already taken');
+    // ❗ Username НЕ проверяем — он может повторяться
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
@@ -53,6 +59,13 @@ export class UsersService {
         username: data.username,
         passwordHash,
         role: Role.DOCTOR,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role: true,
       },
     });
   }

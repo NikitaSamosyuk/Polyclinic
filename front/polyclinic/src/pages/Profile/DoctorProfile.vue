@@ -14,25 +14,25 @@ const errorPhoto = ref<string | null>(null)
 
 const base = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
 
-/*  
-  ВАЖНО:
-  Когда doctor обновляется через @updated — 
-  мы должны обновить форму, иначе будут старые данные.
-*/
 const form = ref({
   lastName: props.doctor.lastName,
   firstName: props.doctor.firstName,
   middleName: props.doctor.middleName,
 })
 
+/*  
+  Если doctor обновился, но мы НЕ редактируем — обновляем форму.
+*/
 watch(
   () => props.doctor,
   (d) => {
     if (!d) return
-    form.value = {
-      lastName: d.lastName,
-      firstName: d.firstName,
-      middleName: d.middleName,
+    if (!isEditing.value) {
+      form.value = {
+        lastName: d.lastName,
+        firstName: d.firstName,
+        middleName: d.middleName,
+      }
     }
   },
   { deep: true }
@@ -40,11 +40,7 @@ watch(
 
 function startEdit() {
   isEditing.value = true
-  form.value = {
-    lastName: props.doctor.lastName,
-    firstName: props.doctor.firstName,
-    middleName: props.doctor.middleName,
-  }
+  errorPhoto.value = null
 }
 
 function cancelEdit() {
@@ -57,10 +53,7 @@ async function save() {
 
   try {
     await doctorsApi.update(props.doctor.id, form.value)
-
-    // Загружаем врача заново, чтобы cabinet, specialization и т.д. были актуальны
     const fresh = await doctorsApi.getById(props.doctor.id)
-
     emit('updated', fresh)
     isEditing.value = false
   } catch (e) {
@@ -70,10 +63,7 @@ async function save() {
 
 async function onPhotoClick() {
   if (!isEditing.value) return
-  if (!props.doctor?.id) {
-    console.error('❌ doctor.id отсутствует при загрузке фото:', props.doctor)
-    return
-  }
+  if (!props.doctor?.id) return
 
   const input = document.createElement('input')
   input.type = 'file'
@@ -91,7 +81,12 @@ async function onPhotoClick() {
 
     try {
       const updated = await doctorsApi.uploadPhoto(formData)
-      emit('updated', updated)
+
+      // Обновляем только фото, не сбрасывая форму
+      emit('updated', {
+        ...props.doctor,
+        photoUrl: updated.photoUrl,
+      })
     } catch (err: any) {
       errorPhoto.value = err?.response?.data?.message || 'Ошибка загрузки фото'
     } finally {
@@ -104,14 +99,14 @@ async function onPhotoClick() {
 </script>
 
 <template>
-  <div class="bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-xl font-semibold mb-4">Профиль врача</h2>
+  <div class="bg-white border border-teal-300 rounded-2xl shadow p-6 space-y-6">
+    <h2 class="text-3xl font-bold text-teal-800">Профиль врача</h2>
 
-    <div class="flex gap-6">
+    <div class="flex flex-col md:flex-row gap-10">
       <!-- Фото врача -->
-      <div class="flex flex-col items-center gap-2">
+      <div class="flex flex-col items-center gap-3">
         <div
-          class="overflow-hidden rounded-md bg-gray-100 flex justify-center items-center border cursor-pointer"
+          class="overflow-hidden rounded-xl bg-gray-100 border border-teal-300 shadow cursor-pointer"
           style="width: 260px; height: 360px"
           @click="onPhotoClick"
         >
@@ -123,82 +118,82 @@ async function onPhotoClick() {
 
         <p v-if="loadingPhoto" class="text-xs text-gray-500">Загрузка фото...</p>
         <p v-if="errorPhoto" class="text-xs text-red-600">{{ errorPhoto }}</p>
-
         <p v-if="isEditing" class="text-xs text-blue-600">Нажмите на фото, чтобы изменить</p>
       </div>
 
       <!-- Информация -->
-      <div class="flex-1 space-y-3">
-        <!-- Фамилия -->
-        <div>
-          <label class="block text-sm font-medium">Фамилия</label>
-          <input
-            v-if="isEditing"
-            v-model="form.lastName"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
-          <p v-else>{{ doctor.lastName }}</p>
+      <div class="flex-1 space-y-6">
+        <!-- ФИО врача -->
+        <div class="flex items-start gap-3">
+          <img src="@/assets/profile-doctor-icon.png" class="w-7 h-7 object-contain" />
+
+          <div class="flex-1 space-y-3">
+            <!-- Фамилия -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Фамилия</label>
+              <input
+                v-if="isEditing"
+                v-model="form.lastName"
+                class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              />
+              <p v-else class="text-gray-900 text-lg font-semibold">
+                {{ doctor.lastName }}
+              </p>
+            </div>
+
+            <!-- Имя -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Имя</label>
+              <input
+                v-if="isEditing"
+                v-model="form.firstName"
+                class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              />
+              <p v-else class="text-gray-900 text-lg font-semibold">
+                {{ doctor.firstName }}
+              </p>
+            </div>
+
+            <!-- Отчество -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Отчество</label>
+              <input
+                v-if="isEditing"
+                v-model="form.middleName"
+                class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              />
+              <p v-else class="text-gray-900 text-lg font-semibold">
+                {{ doctor.middleName }}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <!-- Имя -->
-        <div>
-          <label class="block text-sm font-medium">Имя</label>
-          <input
-            v-if="isEditing"
-            v-model="form.firstName"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
-          <p v-else>{{ doctor.firstName }}</p>
+        <!-- Специализация -->
+        <div class="flex items-start gap-3">
+          <img src="@/assets/doctor-icon.png" class="w-7 h-7 object-contain" />
+          <p class="text-gray-900 text-lg font-medium">
+            <b>Специализация:</b> {{ doctor.specialization }}
+          </p>
         </div>
 
-        <!-- Отчество -->
-        <div>
-          <label class="block text-sm font-medium">Отчество</label>
-          <input
-            v-if="isEditing"
-            v-model="form.middleName"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
-          <p v-else>{{ doctor.middleName }}</p>
+        <!-- Кабинет -->
+        <div class="flex items-start gap-3">
+          <img src="@/assets/cabinet-icon.png" class="w-7 h-7 object-contain" />
+          <p class="text-gray-900 text-lg font-medium">
+            <b>Кабинет:</b>
+            <span v-if="doctor.cabinet">№{{ doctor.cabinet.number }}</span>
+            <span v-else>Не назначен</span>
+          </p>
         </div>
-
-        <!-- Имя -->
-        <div>
-          <label class="block text-sm font-medium">Имя</label>
-          <input
-            v-if="isEditing"
-            v-model="form.firstName"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
-          <p v-else>{{ doctor.firstName }}</p>
-        </div>
-
-        <!-- Отчество -->
-        <div>
-          <label class="block text-sm font-medium">Отчество</label>
-          <input
-            v-if="isEditing"
-            v-model="form.middleName"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
-          <p v-else>{{ doctor.middleName }}</p>
-        </div>
-
-        <p><strong>Специализация:</strong> {{ doctor.specialization }}</p>
-
-        <p>
-          <strong>Кабинет:</strong>
-          <span v-if="doctor.cabinet">№{{ doctor.cabinet.number }}</span>
-          <span v-else>Не назначен</span>
-        </p>
       </div>
     </div>
 
     <!-- Кнопки -->
-    <div class="mt-6 flex gap-3">
+    <div class="flex gap-3 pt-4">
       <button
         v-if="!isEditing"
-        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+        class="w-full bg-blue-600 text-white py-3 rounded-lg shadow hover:bg-blue-700 transition"
         @click="startEdit"
       >
         Редактировать
@@ -206,13 +201,16 @@ async function onPhotoClick() {
 
       <template v-else>
         <button
-          class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+          class="w-full bg-green-600 text-white py-3 rounded-lg shadow hover:bg-green-700 transition"
           @click="save"
         >
           Сохранить
         </button>
 
-        <button class="w-full bg-gray-300 py-2 rounded-lg hover:bg-gray-400" @click="cancelEdit">
+        <button
+          class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg shadow hover:bg-gray-300 transition"
+          @click="cancelEdit"
+        >
           Отмена
         </button>
       </template>

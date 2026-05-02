@@ -1,23 +1,23 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateVisitDto {
-  @IsString()
   @IsOptional()
+  @IsString()
   complaints?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   diagnosis?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   examination?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   treatment?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   recommendations?: string;
 }

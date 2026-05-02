@@ -27,11 +27,7 @@ const showEditModal = ref(false)
 const editCabinet = ref(null)
 
 const showShiftModal = ref(false)
-const shiftData = ref<{
-  doctor: any | null
-  shift: any | null
-  cabinetId: number | null
-}>({
+const shiftData = ref({
   doctor: null,
   shift: null,
   cabinetId: null,
@@ -126,41 +122,47 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-3xl font-bold text-gray-800">Кабинеты</h1>
+  <div class="max-w-7xl mx-auto p-8 space-y-10">
+    <!-- Заголовок + кнопка -->
+    <div class="flex justify-between items-center">
+      <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight">Кабинеты</h1>
 
       <button
         v-if="auth.user?.role === 'ADMIN'"
         @click="createNewCabinet"
-        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        class="px-5 py-2.5 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 transition"
       >
         + Создать кабинет
       </button>
     </div>
 
     <!-- Поиск + фильтр -->
-    <div class="flex flex-row justify-between items-start gap-4 mb-6">
+    <div
+      class="bg-white border border-teal-400 rounded-xl shadow p-6 flex flex-col md:flex-row gap-6"
+    >
+      <!-- Поиск -->
       <div class="relative flex-1">
         <input
           v-model="searchInput"
           @keyup.enter="applySearch"
-          class="w-full px-4 py-2 border rounded-lg"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
           placeholder="Поиск по номеру кабинета или ФИО врача"
         />
+
         <button
           @click="applySearch"
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
+          class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100 transition"
         >
-          🔍
+          <img src="@/assets/look.png" alt="search" class="w-6 h-6 object-contain" />
         </button>
       </div>
 
-      <div class="flex flex-col items-start">
+      <!-- Фильтр -->
+      <div>
         <select
           v-model="selectedSpecialization"
           @change="applySearch"
-          class="px-4 py-2 border rounded-lg bg-white"
+          class="px-4 py-3 border border-teal-400 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-teal-400"
         >
           <option v-for="s in specializations" :key="s" :value="s">
             {{ s }}
@@ -170,9 +172,9 @@ onMounted(load)
     </div>
 
     <!-- Список кабинетов -->
-    <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
+    <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
       <CabinetCard
         v-for="cab in paginatedCabinets"
         :key="cab.id"
@@ -186,13 +188,17 @@ onMounted(load)
     </div>
 
     <!-- Пагинация -->
-    <div v-if="totalPages > 1" class="flex justify-center mt-6 gap-3">
+    <div v-if="totalPages > 1" class="flex justify-center mt-8 gap-2">
       <button
         v-for="page in totalPages"
         :key="page"
         @click="currentPage = page"
-        class="px-3 py-1 rounded border"
-        :class="page === currentPage ? 'bg-blue-600 text-white' : 'bg-white'"
+        class="px-4 py-2 rounded-lg border border-teal-300 shadow-sm transition"
+        :class="
+          page === currentPage
+            ? 'bg-teal-600 text-white'
+            : 'bg-white hover:bg-teal-50 text-teal-800'
+        "
       >
         {{ page }}
       </button>
@@ -214,7 +220,6 @@ onMounted(load)
       @updated="load"
     />
 
-    <!-- ВАЖНО: рендерим ShiftModal только когда ВСЕ данные есть -->
     <ShiftModal
       v-if="showShiftModal && shiftData.doctor && shiftData.cabinetId !== null"
       :show="showShiftModal"

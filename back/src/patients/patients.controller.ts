@@ -17,6 +17,10 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 export class PatientsController {
   constructor(private readonly patients: PatientsService) {}
 
+  // ============================================================
+  // РЕГИСТРАЦИЯ ПАЦИЕНТА
+  // ============================================================
+
   @Post('register')
   async register(@Req() req, @Body() dto: RegisterPatientDto) {
     if (req.user.role !== 'PATIENT') {
@@ -28,6 +32,10 @@ export class PatientsController {
     return this.patients.createPatient(req.user.sub, dto);
   }
 
+  // ============================================================
+  // МОЙ ПРОФИЛЬ
+  // ============================================================
+
   @Get('me')
   async me(@Req() req) {
     if (req.user.role !== 'PATIENT') {
@@ -37,16 +45,28 @@ export class PatientsController {
     return this.patients.getByUserId(req.user.sub);
   }
 
+  // ============================================================
+  // ПОИСК
+  // ============================================================
+
   @Get('search/query')
   async search(@Req() req, @Query('q') q: string) {
     if (!q) return [];
     return this.patients.search(q, req.user.sub, req.user.role);
   }
 
+  // ============================================================
+  // СПИСОК ПАЦИЕНТОВ
+  // ============================================================
+
   @Get()
   async getAll(@Req() req) {
     return this.patients.getAllForDoctorOrAdmin(req.user.sub, req.user.role);
   }
+
+  // ============================================================
+  // ПОЛУЧЕНИЕ ПАЦИЕНТА
+  // ============================================================
 
   @Get(':id')
   async getById(@Req() req, @Param('id') id: string) {
@@ -56,6 +76,10 @@ export class PatientsController {
       req.user.role,
     );
   }
+
+  // ============================================================
+  // ОБНОВЛЕНИЕ ПАЦИЕНТА
+  // ============================================================
 
   @Patch(':id')
   async update(
@@ -71,6 +95,10 @@ export class PatientsController {
     );
   }
 
+  // ============================================================
+  // ДЕАКТИВАЦИЯ ПАЦИЕНТА
+  // ============================================================
+
   @Patch(':id/deactivate')
   async deactivate(@Req() req, @Param('id') id: string) {
     if (req.user.role !== 'ADMIN') {
@@ -78,5 +106,18 @@ export class PatientsController {
     }
 
     return this.patients.deactivatePatient(Number(id));
+  }
+
+  // ============================================================
+  // АКТИВАЦИЯ ПАЦИЕНТА
+  // ============================================================
+
+  @Patch(':id/activate')
+  async activate(@Req() req, @Param('id') id: string) {
+    if (req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admin can activate patients');
+    }
+
+    return this.patients.activatePatient(Number(id));
   }
 }

@@ -33,9 +33,7 @@ async function loadAvatar() {
     if (raw) {
       const base = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
       avatar.value = `${base}/${raw}?t=${Date.now()}`
-    } else {
-      avatar.value = ''
-    }
+    } else avatar.value = ''
   } catch {
     avatar.value = ''
   }
@@ -51,10 +49,7 @@ async function loadDoctorProfile() {
   if (auth.user?.role === 'DOCTOR') {
     const userId = auth.user.id
     if (!userId) return
-
     const res = await doctorsApi.getByUserId(userId)
-
-    // ВАЖНО: backend возвращает { doctor: {...} }
     doctor.value = res.doctor ?? res
   }
 }
@@ -165,35 +160,41 @@ function onPatientRegistered() {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center py-10 px-4">
-    <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
+  <div class="max-w-5xl mx-auto p-8 flex flex-col gap-10">
+    <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight text-center">
+      Профиль пользователя
+    </h1>
+
+    <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
 
     <template v-else>
       <!-- USER CARD -->
       <div
         v-if="auth.user"
-        class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 flex items-center gap-6"
+        class="bg-white border border-teal-400 rounded-xl shadow p-6 flex flex-col md:flex-row items-center gap-6"
       >
+        <!-- Аватар -->
         <div
-          class="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center cursor-pointer"
+          class="w-28 h-28 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center cursor-pointer border border-teal-300 shadow"
           @click="onAvatarClick"
         >
           <img v-if="avatar" :src="avatar" class="w-full h-full object-cover" />
-          <span v-else class="text-gray-500 text-3xl font-bold">
+          <span v-else class="text-gray-500 text-4xl font-bold">
             {{ auth.user.username[0].toUpperCase() }}
           </span>
         </div>
 
-        <div class="flex-1">
-          <h2 class="text-2xl font-semibold text-gray-800">
+        <!-- Информация -->
+        <div class="flex-1 text-center md:text-left">
+          <h2 class="text-2xl font-bold text-gray-900">
             {{ auth.user.username }}
           </h2>
           <p class="text-gray-600 text-lg">{{ auth.user.email }}</p>
 
-          <div class="mt-4 flex gap-3 flex-wrap">
+          <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-3">
             <button
               @click="startEdit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
             >
               Редактировать
             </button>
@@ -201,14 +202,14 @@ function onPatientRegistered() {
             <button
               v-if="editing"
               @click="startChangePassword"
-              class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg shadow hover:bg-gray-300"
             >
               Сменить пароль
             </button>
 
             <button
               @click="auth.logout()"
-              class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
             >
               Выйти
             </button>
@@ -219,14 +220,22 @@ function onPatientRegistered() {
       <!-- EDIT PROFILE -->
       <div
         v-if="auth.user && editing"
-        class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 mt-6 space-y-3"
+        class="bg-white border border-teal-300 rounded-xl shadow p-6 space-y-4"
       >
-        <input v-model="form.username" class="w-full px-4 py-2 border rounded-lg" />
-        <input v-model="form.email" class="w-full px-4 py-2 border rounded-lg" />
+        <input
+          v-model="form.username"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+          placeholder="Имя пользователя"
+        />
+        <input
+          v-model="form.email"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+          placeholder="Email"
+        />
 
         <button
           @click="saveProfile"
-          class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+          class="w-full bg-green-600 text-white py-3 rounded-lg shadow hover:bg-green-700"
         >
           Сохранить
         </button>
@@ -235,54 +244,54 @@ function onPatientRegistered() {
       <!-- CHANGE PASSWORD -->
       <div
         v-if="auth.user && changingPassword"
-        class="w-full max-w-xl bg-white shadow-md rounded-xl p-6 mt-6 space-y-3"
+        class="bg-white border border-teal-300 rounded-xl shadow p-6 space-y-4"
       >
         <input
           v-model="passwordForm.current"
           type="password"
-          class="w-full px-4 py-2 border rounded-lg"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
           placeholder="Текущий пароль"
         />
 
         <input
           v-model="passwordForm.new"
           type="password"
-          class="w-full px-4 py-2 border rounded-lg"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
           placeholder="Новый пароль"
         />
 
         <button
           @click="changePassword"
-          class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+          class="w-full bg-blue-600 text-white py-3 rounded-lg shadow hover:bg-blue-700"
         >
           Изменить пароль
         </button>
       </div>
 
-      <p v-if="msg" class="mt-4 text-center text-gray-700">{{ msg }}</p>
+      <p v-if="msg" class="text-center text-gray-700">{{ msg }}</p>
 
       <!-- PATIENT PROFILE -->
-      <div v-if="auth.user?.role === 'PATIENT' && patient" class="w-full max-w-3xl mt-10">
+      <div v-if="auth.user?.role === 'PATIENT' && patient" class="mt-10">
         <PatientProfile :patient="patient" />
       </div>
 
       <!-- PATIENT REGISTRATION BUTTON -->
-      <div v-if="auth.user?.role === 'PATIENT' && !patient" class="mt-10">
+      <div v-if="auth.user?.role === 'PATIENT' && !patient" class="mt-10 text-center">
         <button
           @click="showPatientRegistration = true"
-          class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          class="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700"
         >
           Стать пациентом
         </button>
       </div>
 
       <!-- DOCTOR PROFILE -->
-      <div v-if="auth.user?.role === 'DOCTOR' && doctor" class="w-full max-w-3xl mt-10">
+      <div v-if="auth.user?.role === 'DOCTOR' && doctor" class="mt-10">
         <DoctorProfile :doctor="doctor" @updated="doctor = $event" />
       </div>
 
       <!-- ADMIN PROFILE -->
-      <div v-if="auth.user?.role === 'ADMIN'" class="w-full max-w-3xl mt-10">
+      <div v-if="auth.user?.role === 'ADMIN'" class="mt-10">
         <AdminProfile />
       </div>
 
@@ -293,8 +302,8 @@ function onPatientRegistered() {
         @success="onPatientRegistered"
       />
 
-      <div v-if="!auth.user" class="mt-10 text-gray-600">
-        Профиль недоступен. Попробуй войти заново.
+      <div v-if="!auth.user" class="mt-10 text-gray-600 text-center">
+        Профиль недоступен. Попробуйте войти заново.
       </div>
     </template>
   </div>

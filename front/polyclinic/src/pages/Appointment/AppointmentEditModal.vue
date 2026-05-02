@@ -1,27 +1,35 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { getDoctors } from '@/api/doctors'
 import { getSlotsForDoctor } from '@/api/schedule'
-import { rescheduleAppointment } from '@/api/appointments'
+import { updateAppointment } from '@/api/appointments'
 import AppointmentCalendar from '@/components/AppointmentCalendar.vue'
+
+interface Appointment {
+  id: number
+  doctorId: number
+  appointmentDate: string
+  startTime: string
+  endTime: string
+}
 
 const props = defineProps<{
   modelValue: boolean
-  appointment: any
+  appointment: Appointment | null
 }>()
 
 const emit = defineEmits(['update:modelValue', 'saved'])
 
 const step = ref(1)
 
-const doctors = ref([])
+const doctors = ref<any[]>([])
 const selectedDoctor = ref<any>(null)
 
 const selectedDate = ref<string | null>(null)
 const selectedSlot = ref<any>(null)
 
-const calendarDays = ref([])
-const slots = ref([])
+const calendarDays = ref<any[]>([])
+const slots = ref<any[]>([])
 
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -35,19 +43,16 @@ async function load() {
 
   doctors.value = await getDoctors()
 
-  // текущий врач
-  selectedDoctor.value = doctors.value.find((d) => d.id === props.appointment.doctorId)
+  selectedDoctor.value = doctors.value.find((d) => d.id === props.appointment!.doctorId)
 
-  // текущая дата
-  selectedDate.value = props.appointment.appointmentDate.slice(0, 10)
+  selectedDate.value = props.appointment!.appointmentDate.slice(0, 10)
 
   await loadCalendar(selectedDoctor.value.id)
   await loadSlotsForSelectedDate()
 
-  // текущий слот
   selectedSlot.value = {
-    start: props.appointment.startTime,
-    end: props.appointment.endTime,
+    start: props.appointment!.startTime,
+    end: props.appointment!.endTime,
     isFree: true,
   }
 
@@ -119,9 +124,9 @@ async function save() {
   error.value = null
 
   try {
-    await rescheduleAppointment(props.appointment.id, {
+    await updateAppointment(props.appointment!.id, {
       doctorId: selectedDoctor.value.id,
-      date: selectedDate.value,
+      date: selectedDate.value!,
       startTime: selectedSlot.value.start.slice(11, 16),
     })
 
@@ -144,7 +149,7 @@ async function save() {
 
       <div v-if="error" class="text-red-600 mb-4">{{ error }}</div>
 
-      <!-- ШАГ 1 — выбор врача -->
+      <!-- ШАГ 1 -->
       <div v-if="step === 1">
         <h2 class="text-xl font-bold mb-4">Выберите врача</h2>
 
@@ -162,7 +167,7 @@ async function save() {
         <button class="mt-4 px-3 py-1 bg-gray-200 rounded" @click="close">Отмена</button>
       </div>
 
-      <!-- ШАГ 2 — календарь -->
+      <!-- ШАГ 2 -->
       <div v-if="step === 2">
         <h2 class="text-xl font-bold mb-4">Выберите дату</h2>
 
@@ -180,7 +185,7 @@ async function save() {
         </div>
       </div>
 
-      <!-- ШАГ 3 — выбор времени -->
+      <!-- ШАГ 3 -->
       <div v-if="step === 3">
         <h2 class="text-xl font-bold mb-4">Выберите время</h2>
 
@@ -202,7 +207,7 @@ async function save() {
         <button class="mt-4 px-3 py-1 bg-gray-200 rounded" @click="step = 2">Назад</button>
       </div>
 
-      <!-- ШАГ 4 — подтверждение -->
+      <!-- ШАГ 4 -->
       <div v-if="step === 4">
         <h2 class="text-xl font-bold mb-4">Подтверждение переноса</h2>
 
@@ -226,7 +231,7 @@ async function save() {
         </div>
       </div>
 
-      <!-- ШАГ 5 — успех -->
+      <!-- ШАГ 5 -->
       <div v-if="step === 5">
         <h2 class="text-xl font-bold mb-4 text-green-700">Запись успешно перенесена!</h2>
 

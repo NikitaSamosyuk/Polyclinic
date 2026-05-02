@@ -1,58 +1,64 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
-  Get,
-  Param,
+  Delete,
   Body,
+  Param,
   Req,
-  ForbiddenException,
 } from '@nestjs/common';
 import { VisitsService } from './visits.service';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { UpdateVisitDto } from './dto/update-visit.dto';
+import { Request } from 'express';
+
+type Role = 'ADMIN' | 'DOCTOR' | 'PATIENT';
+
+interface AuthUser {
+  sub: number;
+  role: Role;
+}
+
+interface AuthRequest extends Request {
+  user?: AuthUser;
+}
 
 @Controller('visits')
 export class VisitsController {
-  constructor(private visits: VisitsService) {}
+  constructor(private readonly visits: VisitsService) {}
 
   @Post()
-  async create(@Req() req, @Body() dto: CreateVisitDto) {
-    if (req.user.role !== 'DOCTOR') {
-      throw new ForbiddenException('Only doctors can create visits');
-    }
-
-    return this.visits.create(req.user.sub, dto);
-  }
-
-  @Patch(':id')
-  async update(
-    @Req() req,
-    @Param('id') id: string,
-    @Body() dto: UpdateVisitDto,
-  ) {
-    if (req.user.role !== 'DOCTOR') {
-      throw new ForbiddenException('Only doctors can update visits');
-    }
-
-    return this.visits.update(req.user.sub, Number(id), dto);
-  }
-
-  @Get(':id')
-  async getById(@Param('id') id: string) {
-    return this.visits.getById(Number(id));
+  create(@Req() req: AuthRequest, @Body() dto: CreateVisitDto) {
+    return this.visits.create(req.user!.sub, req.user!.role, dto);
   }
 
   @Get()
-  async getForUser(@Req() req) {
-    if (req.user.role === 'PATIENT') {
-      return this.visits.getForPatient(req.user.sub);
-    }
+  getAll(@Req() req: AuthRequest) {
+    return this.visits.getAll(req.user!.sub, req.user!.role);
+  }
 
-    if (req.user.role === 'DOCTOR') {
-      return this.visits.getForDoctor(req.user.sub);
-    }
+  @Get('my')
+  getMy(@Req() req: AuthRequest) {
+    return this.visits.getMy(req.user!.sub, req.user!.role);
+  }
 
-    throw new ForbiddenException('Access denied');
+  @Get(':id')
+  getById(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.visits.getById(Number(id), req.user!.sub, req.user!.role);
+  }
+
+  @Patch(':id')
+  update(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateVisitDto,
+  ) {
+    return this.visits.update(Number(id), req.user!.sub, req.user!.role, dto);
+  }
+
+  @Delete(':id')
+  delete(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.visits.delete(Number(id), req.user!.sub, req.user!.role);
   }
 }

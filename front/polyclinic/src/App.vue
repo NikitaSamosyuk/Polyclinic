@@ -1,16 +1,26 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-    <MainMenu />
+  <div class="min-h-screen flex justify-center bg-gray-200">
+    <!-- Белый лист -->
+    <div
+      class="w-full max-w-[1200px] min-h-screen flex flex-col bg-white shadow-xl border border-gray-300"
+    >
+      <!-- Главное меню -->
+      <MainMenu />
 
-    <main class="flex-1 w-[80%] max-w-5xl mx-auto px-4 py-6">
-      <router-view />
-    </main>
+      <!-- Контентная область -->
+      <main class="flex-1 flex justify-center py-6 px-4">
+        <div class="w-full max-w-5xl">
+          <router-view />
+        </div>
+      </main>
 
-    <Footer />
+      <!-- Футер -->
+      <Footer />
+    </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import MainMenu from './components/MainMenu.vue'
 import Footer from './components/Footer.vue'
 </script>

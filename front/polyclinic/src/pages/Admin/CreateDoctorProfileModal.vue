@@ -1,86 +1,107 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { doctorsApi } from '@/api/doctors'
+import { cabinetsApi } from '@/api/cabinets'
 
-const props = defineProps<{ userId: number | null }>()
+const props = defineProps<{
+  userId: number | null
+}>()
+
 const emit = defineEmits(['close', 'created'])
 
 const form = ref({
-  userId: props.userId!,
   lastName: '',
   firstName: '',
   middleName: '',
   specialization: '',
-  isTherapist: false,
+  phone: '',
   cabinetId: null as number | null,
-  photoUrl: null as string | null,
 })
 
-const errors = ref<Record<string, string>>({})
-const serverError = ref('')
+const cabinets = ref([])
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-async function submit() {
-  errors.value = {}
-  serverError.value = ''
+async function loadCabinets() {
+  cabinets.value = await cabinetsApi.getAll()
+}
 
-  if (!form.value.lastName) errors.value.lastName = 'Фамилия обязательна'
-  if (!form.value.firstName) errors.value.firstName = 'Имя обязательно'
-  if (!form.value.specialization) errors.value.specialization = 'Специализация обязательна'
+async function createDoctor() {
+  if (!props.userId) {
+    error.value = 'Ошибка: userId отсутствует'
+    return
+  }
 
-  if (Object.keys(errors.value).length > 0) return
+  loading.value = true
+  error.value = null
 
   try {
-    await doctorsApi.create(form.value)
+    await doctorsApi.create({
+      userId: props.userId,
+      ...form.value,
+    })
+
     emit('created')
+    emit('close')
   } catch (e: any) {
-    serverError.value = e?.response?.data?.message || 'Ошибка создания врача'
+    error.value = e?.response?.data?.message || 'Ошибка создания врача'
+  } finally {
+    loading.value = false
   }
 }
+
+loadCabinets()
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/40 flex justify-center items-center">
-    <div class="bg-white p-6 rounded-xl w-[420px] shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Создание профиля врача</h2>
+  <div
+    class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+    @click.self="emit('close')"
+  >
+    <div class="bg-white w-full max-w-xl rounded-xl shadow-xl p-8 space-y-6">
+      <h2 class="text-2xl font-bold text-teal-700">Создание профиля врача</h2>
 
-      <p v-if="serverError" class="text-red-600 mb-3 text-sm">{{ serverError }}</p>
+      <div class="space-y-4">
+        <input v-model="form.lastName" class="input" placeholder="Фамилия" />
+        <input v-model="form.firstName" class="input" placeholder="Имя" />
+        <input v-model="form.middleName" class="input" placeholder="Отчество" />
+        <input v-model="form.specialization" class="input" placeholder="Специализация" />
+        <input v-model="form.phone" class="input" placeholder="Телефон" />
 
-      <div class="space-y-3">
-        <input
-          v-model="form.lastName"
-          class="w-full px-3 py-2 border rounded-lg"
-          placeholder="Фамилия"
-        />
-        <input
-          v-model="form.firstName"
-          class="w-full px-3 py-2 border rounded-lg"
-          placeholder="Имя"
-        />
-        <input
-          v-model="form.middleName"
-          class="w-full px-3 py-2 border rounded-lg"
-          placeholder="Отчество"
-        />
-        <input
-          v-model="form.specialization"
-          class="w-full px-3 py-2 border rounded-lg"
-          placeholder="Специализация"
-        />
+        <select v-model="form.cabinetId" class="input">
+          <option :value="null">Без кабинета</option>
+          <option v-for="c in cabinets" :key="c.id" :value="c.id">Кабинет №{{ c.number }}</option>
+        </select>
 
-        <button
-          class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-          @click="submit"
-        >
-          Создать врача
-        </button>
+        <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
+      </div>
 
-        <button
-          class="w-full bg-gray-300 py-2 rounded-lg hover:bg-gray-400"
-          @click="$emit('close')"
-        >
-          Отмена
+      <div class="flex justify-end gap-3">
+        <button class="btn-gray" @click="emit('close')">Отмена</button>
+        <button class="btn-teal" @click="createDoctor" :disabled="loading">
+          {{ loading ? 'Создание...' : 'Создать' }}
         </button>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #0d9488;
+  border-radius: 8px;
+}
+.btn-gray {
+  padding: 10px 16px;
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+.btn-teal {
+  padding: 10px 16px;
+  background: #0d9488;
+  color: white;
+  border-radius: 8px;
+}
+</style>

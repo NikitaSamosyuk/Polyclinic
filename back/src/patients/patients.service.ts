@@ -209,7 +209,7 @@ export class PatientsService {
   }
 
   // ============================================================
-  // ДЕАКТИВАЦИЯ — через USER, а не PATIENT
+  // АКТИВАЦИЯ / ДЕАКТИВАЦИЯ
   // ============================================================
 
   async deactivatePatient(id: number): Promise<User> {
@@ -219,6 +219,16 @@ export class PatientsService {
     return this.prisma.user.update({
       where: { id: patient.userId },
       data: { isActive: false },
+    });
+  }
+
+  async activatePatient(id: number): Promise<User> {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Пациент не найден');
+
+    return this.prisma.user.update({
+      where: { id: patient.userId },
+      data: { isActive: true },
     });
   }
 
@@ -284,18 +294,28 @@ export class PatientsService {
   }
 
   // ============================================================
-  // СПИСОК ПАЦИЕНТОВ
+  // СПИСКИ ПАЦИЕНТОВ
   // ============================================================
+
+  async getAllActive() {
+    return this.prisma.patient.findMany({
+      where: { user: { isActive: true } },
+      include: { user: true, primaryTherapist: true },
+      orderBy: { lastName: 'asc' },
+    });
+  }
+
+  async getAllInactive() {
+    return this.prisma.patient.findMany({
+      where: { user: { isActive: false } },
+      include: { user: true, primaryTherapist: true },
+      orderBy: { lastName: 'asc' },
+    });
+  }
 
   async getAllForDoctorOrAdmin(actorUserId: number, actorRole: string) {
     if (actorRole === 'ADMIN') {
-      return this.prisma.patient.findMany({
-        include: {
-          user: true,
-          primaryTherapist: true,
-        },
-        orderBy: { lastName: 'asc' },
-      });
+      return this.getAllActive();
     }
 
     if (actorRole !== 'DOCTOR') {

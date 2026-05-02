@@ -4,6 +4,8 @@ import { DoctorScheduleService } from '../doctor-schedule/doctor-schedule.servic
 import { ScheduleService } from '../schedule/schedule.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import * as path from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class DatabaseInitService implements OnModuleInit {
@@ -35,7 +37,7 @@ export class DatabaseInitService implements OnModuleInit {
       },
     });
 
-    // 2. Врачи (20)
+    // 2. Врачи
     const doctorsList = [
       {
         first: 'Владислав',
@@ -209,75 +211,7 @@ export class DatabaseInitService implements OnModuleInit {
       await this.doctorSchedule.generateShiftsForNextPeriod(doc.id);
     }
 
-    // 7. УНИКАЛЬНЫЕ ЗОНЫ ТЕРАПЕВТОВ
-    const therapistDoctors = doctorProfiles.filter((d) => d.isTherapist);
-
-    const streetPool = [
-      'Ленина',
-      'Победы',
-      'Гагарина',
-      'Космонавтов',
-      'Молодёжная',
-      'Центральная',
-      'Парковая',
-      'Садовая',
-      'Заречная',
-      'Октябрьская',
-      'Мира',
-      'Строителей',
-      'Полевая',
-      'Берёзовая',
-      'Солнечная',
-      'Юбилейная',
-      'Школьная',
-      'Зелёная',
-      'Набережная',
-      'Лесная',
-    ];
-
-    function generateHouses(): string[] {
-      const houses: string[] = [];
-      const count = 2 + Math.floor(Math.random() * 3);
-
-      for (let i = 0; i < count; i++) {
-        const type = Math.random();
-
-        if (type < 0.4) {
-          houses.push(String(1 + Math.floor(Math.random() * 120)));
-        } else if (type < 0.8) {
-          const start = 1 + Math.floor(Math.random() * 80);
-          const end = start + (2 + Math.floor(Math.random() * 10));
-          houses.push(`${start}-${end}`);
-        } else {
-          const base = 1 + Math.floor(Math.random() * 50);
-          houses.push(`${base}, ${base + 2}, ${base + 4}`);
-        }
-      }
-
-      return houses;
-    }
-
-    const zonesData = [];
-    let streetIndex = 0;
-
-    for (const doc of therapistDoctors) {
-      const zoneCount = 2 + Math.floor(Math.random() * 2);
-
-      for (let i = 0; i < zoneCount; i++) {
-        const street = streetPool[streetIndex % streetPool.length];
-        streetIndex++;
-
-        zonesData.push({
-          doctorId: doc.id,
-          street: street.toLowerCase(),
-          houses: generateHouses(),
-        });
-      }
-    }
-
-    await this.prisma.therapistAddressZone.createMany({ data: zonesData });
-
-    // 8. Пациенты
+    // 7. Пациенты
     const patientUsersData = Array.from({ length: 100 }).map((_, i) => ({
       username: `patient${i + 1}`,
       email: `patient${i + 1}@mail.com`,
@@ -317,13 +251,13 @@ export class DatabaseInitService implements OnModuleInit {
       houseNumber: `${(i % 50) + 1}`,
       apartment: `${(i % 100) + 1}`,
       medicalCardNumber: `MC-${100 + i}`,
-      primaryTherapistId: therapistDoctors[i % therapistDoctors.length].id,
+      primaryTherapistId: doctorProfiles[i % doctorProfiles.length].id,
     }));
 
     await this.prisma.patient.createMany({ data: patientProfilesData });
 
-    // 9. Случайные записи
-    console.log('--- Создаём тестовые записи пациентов ---');
+    // 8. Создаём записи
+    console.log('--- Создаём записи пациентов ---');
 
     const allDoctors = doctorProfiles;
     const allPatients = await this.prisma.patient.findMany({
@@ -340,20 +274,17 @@ export class DatabaseInitService implements OnModuleInit {
       return d.toISOString().split('T')[0];
     }
 
-    let created = 0;
+    let createdAppointments = 0;
 
-    for (let i = 0; i < 60; i++) {
-      const patient = randomItem(allPatients);
+    for (const patient of allPatients) {
       const doctor = randomItem(allDoctors);
-
-      const date = randomDateWithin(7);
+      const date = randomDateWithin(10);
 
       const shift = await this.schedule.getDoctorShift(doctor.id, date);
       if (!shift) continue;
 
       const slots = await this.schedule.getSlotsForDoctor(doctor.id, date);
       const freeSlot = slots.slots.find((s) => s.isFree);
-
       if (!freeSlot) continue;
 
       await this.prisma.appointment.create({
@@ -367,10 +298,94 @@ export class DatabaseInitService implements OnModuleInit {
         },
       });
 
-      created++;
+      createdAppointments++;
     }
 
-    console.log(`--- Создано ${created} тестовых записей пациентов ---`);
+    console.log(`--- Создано ${createdAppointments} записей ---`);
+
+    // 9. Создаём визиты
+    console.log('--- Создаём визиты ---');
+
+    const appointments = await this.prisma.appointment.findMany({
+      orderBy: { id: 'asc' },
+    });
+
+    let visitsCreated = 0;
+
+    // 🔥 ЭТАЛОННЫЕ ПАПКИ (ты кладёшь туда реальные файлы)
+    const sourceDirs = [
+      path.join(process.cwd(), 'uploads', 'visits', '1'),
+      path.join(process.cwd(), 'uploads', 'visits', '2'),
+      path.join(process.cwd(), 'uploads', 'visits', '3'),
+    ];
+
+    for (const appt of appointments) {
+      const exists = await this.prisma.visit.findUnique({
+        where: { appointmentId: appt.id },
+      });
+      if (exists) continue;
+
+      const visit = await this.prisma.visit.create({
+        data: {
+          appointmentId: appt.id,
+          patientId: appt.patientId,
+          doctorId: appt.doctorId,
+          visitDatetime: new Date(appt.startTime.getTime() + 30 * 60 * 1000),
+          complaints: 'Жалобы на слабость и недомогание',
+          diagnosis: 'ОРВИ',
+          examination: 'Осмотр, измерение температуры, аускультация',
+          treatment: 'Постельный режим, питьё, жаропонижающие',
+          recommendations: 'Повторный визит при ухудшении',
+        },
+      });
+
+      // создаём папку визита
+      const visitDir = path.join(
+        process.cwd(),
+        'uploads',
+        'visits',
+        String(visit.id),
+      );
+      if (!fs.existsSync(visitDir)) {
+        fs.mkdirSync(visitDir, { recursive: true });
+      }
+
+      // выбираем случайную эталонную папку
+      const src = randomItem(sourceDirs);
+
+      // читаем файлы из эталонной папки
+      const files = fs.readdirSync(src);
+
+      // выбираем случайные 1–5 файлов
+      const selected = [...files]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 1 + Math.floor(Math.random() * 5));
+
+      for (const f of selected) {
+        const srcPath = path.join(src, f);
+        const dstPath = path.join(visitDir, f);
+
+        // копируем файл
+        fs.copyFileSync(srcPath, dstPath);
+
+        // создаём запись в БД
+        await this.prisma.attachedFile.create({
+          data: {
+            visitId: visit.id,
+            fileType: f.endsWith('.pdf')
+              ? 'application/pdf'
+              : f.endsWith('.doc') || f.endsWith('.docx')
+                ? 'application/msword'
+                : 'image/jpeg',
+            filePath: `/uploads/visits/${visit.id}/${f}`,
+          },
+        });
+      }
+
+      visitsCreated++;
+    }
+
+    console.log(`--- Создано ${visitsCreated} визитов ---`);
     console.log('--- Тестовые данные созданы! ---');
   }
 }

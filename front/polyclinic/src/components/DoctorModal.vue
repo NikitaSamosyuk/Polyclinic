@@ -31,16 +31,11 @@ async function load() {
 
 watch(
   () => props.doctorId,
-  () => {
-    if (props.show) load()
-  }
+  () => props.show && load()
 )
-
 watch(
   () => props.show,
-  (val) => {
-    if (val) load()
-  }
+  (v) => v && load()
 )
 
 onMounted(() => {
@@ -55,22 +50,33 @@ function close() {
 <template>
   <div
     v-if="show"
-    class="fixed inset-0 z-[9999] flex items-center justify-center"
+    class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
     @click.self="close"
-    style="backdrop-filter: blur(8px); background: rgba(255, 255, 255, 0.25)"
   >
     <div
-      class="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fadeIn"
+      class="relative bg-white border border-teal-300 rounded-2xl shadow-xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto animate-fadeIn"
     >
-      <button class="absolute top-3 right-3 text-gray-500 hover:text-black text-xl" @click="close">
-        ✖
+      <!-- Кнопка закрытия (картинка cancel.png) -->
+      <button
+        class="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+        @click="close"
+      >
+        <img
+          src="@/assets/cancel.png"
+          alt="close"
+          class="w-6 h-6 object-contain pointer-events-none"
+        />
       </button>
 
-      <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
-      <div v-else-if="error" class="text-red-600 text-lg">{{ error }}</div>
+      <!-- Состояния -->
+      <div v-if="loading" class="text-gray-600 text-lg text-center py-6">Загрузка...</div>
 
-      <!-- ВАЖНО: центрирование карточки -->
-      <div v-else class="w-full flex justify-center">
+      <div v-else-if="error" class="text-red-600 text-lg text-center py-6">
+        {{ error }}
+      </div>
+
+      <!-- Карточка врача -->
+      <div v-else class="flex justify-center">
         <DoctorCard :doctor="doctor" />
       </div>
     </div>

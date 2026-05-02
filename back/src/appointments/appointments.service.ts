@@ -8,7 +8,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ScheduleService } from '../schedule/schedule.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
-import { Appointment } from '@prisma/client';
+import { Appointment, Doctor, Patient, Cabinet } from '@prisma/client';
+
+type AppointmentWithRelations = Appointment & {
+  doctor: Doctor;
+  patient: Patient;
+  cabinet: Cabinet;
+};
 
 @Injectable()
 export class AppointmentsService {
@@ -21,12 +27,12 @@ export class AppointmentsService {
     doctor: true,
     patient: true,
     cabinet: true,
-  };
+  } as const;
 
   async create(
     patientUserId: number,
     dto: CreateAppointmentDto,
-  ): Promise<Appointment> {
+  ): Promise<AppointmentWithRelations> {
     const patient = await this.prisma.patient.findUnique({
       where: { userId: patientUserId },
     });
@@ -69,17 +75,20 @@ export class AppointmentsService {
         reason: dto.reason ?? null,
       },
       include: this.fullInclude,
-    });
+    }) as Promise<AppointmentWithRelations>;
   }
 
-  async getAll() {
+  async getAll(): Promise<AppointmentWithRelations[]> {
     return this.prisma.appointment.findMany({
       orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
       include: this.fullInclude,
-    });
+    }) as Promise<AppointmentWithRelations[]>;
   }
 
-  async getMy(userId: number, role: 'ADMIN' | 'DOCTOR' | 'PATIENT') {
+  async getMy(
+    userId: number,
+    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
+  ): Promise<AppointmentWithRelations[]> {
     if (role === 'PATIENT') {
       const patient = await this.prisma.patient.findUnique({
         where: { userId },
@@ -89,11 +98,10 @@ export class AppointmentsService {
       return this.prisma.appointment.findMany({
         where: {
           patientId: patient.id,
-          appointmentDate: { gte: new Date() },
         },
         orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
         include: this.fullInclude,
-      });
+      }) as Promise<AppointmentWithRelations[]>;
     }
 
     if (role === 'DOCTOR') {
@@ -103,25 +111,24 @@ export class AppointmentsService {
       return this.prisma.appointment.findMany({
         where: {
           doctorId: doctor.id,
-          appointmentDate: { gte: new Date() },
         },
         orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
         include: this.fullInclude,
-      });
+      }) as Promise<AppointmentWithRelations[]>;
     }
 
     return [];
   }
 
-  async getByDoctorId(doctorId: number) {
+  async getByDoctorId(doctorId: number): Promise<AppointmentWithRelations[]> {
     return this.prisma.appointment.findMany({
       where: { doctorId },
       orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
       include: this.fullInclude,
-    });
+    }) as Promise<AppointmentWithRelations[]>;
   }
 
-  async cancelMy(userId: number, appointmentId: number) {
+  async cancelMy(userId: number, appointmentId: number): Promise<Appointment> {
     const patient = await this.prisma.patient.findUnique({
       where: { userId },
     });
@@ -147,20 +154,84 @@ export class AppointmentsService {
     });
   }
 
-  async update(id: number, dto: UpdateAppointmentDto) {
+  private formatDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private formatTime(date: Date): string {
+    return date.toISOString().slice(11, 16);
+  }
+
+  async update(
+    id: number,
+    dto: UpdateAppointmentDto,
+  ): Promise<AppointmentWithRelations> {
     const appt = await this.prisma.appointment.findUnique({ where: { id } });
-    if (!appt) throw new NotFoundException('Запись не найдена');
+    if (!appt) {
+      throw new NotFoundException('Запись не найдена');
+    }
+
+    let appointmentDate = appt.appointmentDate;
+    let startTime = appt.startTime;
+    let endTime = appt.endTime;
+
+    const needReschedule =
+      dto.date !== undefined || dto.startTime !== undefined;
+
+    if (needReschedule) {
+      const dateStr = dto.date ?? this.formatDate(appt.appointmentDate);
+      const startTimeStr = dto.startTime ?? this.formatTime(appt.startTime);
+
+      const shift = await this.schedule.getDoctorShift(appt.doctorId, dateStr);
+      if (!shift) {
+        throw new BadRequestException('Врач не работает в этот день');
+      }
+
+      const slots = await this.schedule.getSlotsForDoctor(
+        appt.doctorId,
+        dateStr,
+      );
+      const slot = slots.slots.find((s) =>
+        s.start.toISOString().includes(startTimeStr),
+      );
+
+      if (!slot) {
+        throw new BadRequestException('Слот не найден');
+      }
+
+      if (!slot.isFree) {
+        throw new BadRequestException('Слот уже занят');
+      }
+
+      appointmentDate = new Date(dateStr);
+      startTime = new Date(`${dateStr}T${startTimeStr}:00`);
+      endTime = new Date(
+        startTime.getTime() + shift.cabinet.slotDuration * 60_000,
+      );
+    }
+
+    const data: Partial<Appointment> = {
+      reason: dto.reason ?? appt.reason,
+    };
+
+    if (needReschedule) {
+      data.appointmentDate = appointmentDate;
+      data.startTime = startTime;
+      data.endTime = endTime;
+    }
 
     return this.prisma.appointment.update({
       where: { id },
-      data: dto,
+      data,
       include: this.fullInclude,
-    });
+    }) as Promise<AppointmentWithRelations>;
   }
 
-  async delete(id: number) {
+  async delete(id: number): Promise<Appointment> {
     const appt = await this.prisma.appointment.findUnique({ where: { id } });
-    if (!appt) throw new NotFoundException('Запись не найдена');
+    if (!appt) {
+      throw new NotFoundException('Запись не найдена');
+    }
 
     return this.prisma.appointment.delete({ where: { id } });
   }

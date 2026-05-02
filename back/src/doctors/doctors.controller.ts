@@ -4,7 +4,6 @@ import {
   Get,
   Post,
   Patch,
-  Delete,
   Body,
   Param,
   Req,
@@ -31,10 +30,23 @@ interface AuthRequest extends Request {
 export class DoctorsController {
   constructor(private doctors: DoctorsService) {}
 
-  @Get()
-  async getAll() {
+  // ============================================================
+  // СПИСКИ ВРАЧЕЙ
+  // ============================================================
+
+  @Get('active')
+  async getActive() {
     return this.doctors.getAllActive();
   }
+
+  @Get('inactive')
+  async getInactive() {
+    return this.doctors.getAllInactive();
+  }
+
+  // ============================================================
+  // ПОЛУЧЕНИЕ ВРАЧА
+  // ============================================================
 
   @Get(':id')
   async getById(@Param('id') id: string) {
@@ -45,6 +57,10 @@ export class DoctorsController {
   async getByUserId(@Param('userId') userId: string) {
     return this.doctors.getByUserId(Number(userId));
   }
+
+  // ============================================================
+  // ФОТО
+  // ============================================================
 
   @Get('photo')
   async getPhoto(@Req() req: AuthRequest) {
@@ -85,6 +101,10 @@ export class DoctorsController {
     return { photoUrl: updated.photoUrl };
   }
 
+  // ============================================================
+  // СОЗДАНИЕ / ОБНОВЛЕНИЕ
+  // ============================================================
+
   @Post()
   async createDoctor(@Req() req: AuthRequest, @Body() dto: CreateDoctorDto) {
     if (req.user.role !== 'ADMIN') {
@@ -101,11 +121,14 @@ export class DoctorsController {
     @Body() dto: UpdateDoctorDto,
   ) {
     const actor = req.user;
-
     return this.doctors.updateDoctor(Number(id), dto, actor.role, actor.sub);
   }
 
-  @Delete(':id')
+  // ============================================================
+  // АКТИВАЦИЯ / ДЕАКТИВАЦИЯ
+  // ============================================================
+
+  @Patch(':id/deactivate')
   async deactivateDoctor(@Req() req: AuthRequest, @Param('id') id: string) {
     if (req.user.role !== 'ADMIN') {
       throw new ForbiddenException('Only admin can deactivate doctors');
@@ -113,6 +136,19 @@ export class DoctorsController {
 
     return this.doctors.deactivateDoctor(Number(id));
   }
+
+  @Patch(':id/activate')
+  async activateDoctor(@Req() req: AuthRequest, @Param('id') id: string) {
+    if (req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admin can activate doctors');
+    }
+
+    return this.doctors.activateDoctor(Number(id));
+  }
+
+  // ============================================================
+  // ПАЦИЕНТЫ / ЗОНЫ
+  // ============================================================
 
   @Get(':id/patients')
   async getDoctorPatients(@Req() req: AuthRequest, @Param('id') id: string) {

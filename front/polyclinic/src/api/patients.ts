@@ -1,13 +1,14 @@
+// src/api/patients.ts
 import api from './axios'
 
 export const patientsApi = {
-  // Получить всех пациентов (для админа)
+  // Получить всех пациентов (админ)
   async getAll() {
     const res = await api.get('/patients')
     return res.data
   },
 
-  // Получить профиль текущего пациента
+  // Профиль текущего пациента
   async getMyProfile() {
     try {
       const res = await api.get('/patients/me')
@@ -18,39 +19,31 @@ export const patientsApi = {
     }
   },
 
-  // Алиас для совместимости со старым кодом
+  // Алиас
   me() {
     return this.getMyProfile()
   },
 
   // Получить пациента по ID
-  async getById(id) {
+  async getById(id: number) {
     const res = await api.get(`/patients/${id}`)
     return res.data
   },
 
-  // Регистрация
-  async register(dto) {
+  // Регистрация пациента
+  async register(dto: any) {
     const res = await api.post('/patients/register', dto)
     return res.data
   },
 
-  // Обновление
-  async update(id, dto) {
+  // Обновление пациента
+  async update(id: number, dto: any) {
     const res = await api.patch(`/patients/${id}`, dto)
     return res.data
-  }
+  },
 }
 
-// Алиасы — чтобы компоненты могли импортировать напрямую
-export function getPatients() {
-  return patientsApi.getAll()
-}
-
-export function getMyProfile() {
-  return patientsApi.getMyProfile()
-}
-
-export function getPatientById(id) {
-  return patientsApi.getById(id)
-}
+// Алиасы
+export const getPatients = () => patientsApi.getAll()
+export const getMyProfile = () => patientsApi.getMyProfile()
+export const getPatientById = (id: number) => patientsApi.getById(id)

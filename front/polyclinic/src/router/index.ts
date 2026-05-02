@@ -26,6 +26,9 @@ const Zones = () => import('@/pages/Zones.vue')
 // Кабинеты
 const Cabinets = () => import('@/pages/Cabinets.vue')
 
+const Visits = () => import('@/pages/Visits.vue')
+const MyVisits = () => import('@/pages/MyVisits.vue')
+
 const routes = [
   { path: '/', name: 'Home', component: Home },
 
@@ -60,6 +63,10 @@ const routes = [
 
   // --- FALLBACK ---
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: Home },
+
+  { path: '/visits', name: 'Visits', component: Visits, meta: { requiresAuth: true } },
+  { path: '/my-visits', name: 'MyVisits', component: MyVisits, meta: { requiresAuth: true } },
+
 ]
 
 const router = createRouter({

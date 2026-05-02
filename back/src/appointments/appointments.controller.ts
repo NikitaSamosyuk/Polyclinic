@@ -14,11 +14,15 @@ import { Request } from 'express';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
+type Role = 'ADMIN' | 'DOCTOR' | 'PATIENT';
+
+interface AuthUser {
+  sub: number;
+  role: Role;
+}
+
 interface AuthRequest extends Request {
-  user?: {
-    sub: number;
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT';
-  };
+  user?: AuthUser;
 }
 
 @Controller('appointments')
@@ -61,7 +65,12 @@ export class AppointmentsController {
       throw new ForbiddenException('Только админ может видеть записи врача');
     }
 
-    return this.appointments.getByDoctorId(Number(doctorId));
+    const id = Number(doctorId);
+    if (Number.isNaN(id)) {
+      throw new ForbiddenException('Некорректный идентификатор врача');
+    }
+
+    return this.appointments.getByDoctorId(id);
   }
 
   @Delete('my/:id')
@@ -70,7 +79,12 @@ export class AppointmentsController {
       throw new ForbiddenException('Только пациент может отменять свои записи');
     }
 
-    return this.appointments.cancelMy(req.user.sub, parseInt(id, 10));
+    const apptId = Number(id);
+    if (Number.isNaN(apptId)) {
+      throw new ForbiddenException('Некорректный идентификатор записи');
+    }
+
+    return this.appointments.cancelMy(req.user.sub, apptId);
   }
 
   @Patch(':id')
@@ -83,7 +97,12 @@ export class AppointmentsController {
       throw new ForbiddenException('Только админ может редактировать записи');
     }
 
-    return this.appointments.update(parseInt(id, 10), dto);
+    const apptId = Number(id);
+    if (Number.isNaN(apptId)) {
+      throw new ForbiddenException('Некорректный идентификатор записи');
+    }
+
+    return this.appointments.update(apptId, dto);
   }
 
   @Delete(':id')
@@ -92,6 +111,11 @@ export class AppointmentsController {
       throw new ForbiddenException('Только админ может удалять записи');
     }
 
-    return this.appointments.delete(parseInt(id, 10));
+    const apptId = Number(id);
+    if (Number.isNaN(apptId)) {
+      throw new ForbiddenException('Некорректный идентификатор записи');
+    }
+
+    return this.appointments.delete(apptId);
   }
 }

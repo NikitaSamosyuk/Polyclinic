@@ -1,146 +1,159 @@
 <template>
-  <div class="fixed inset-0 bg-black/40 flex justify-center items-center">
-    <div class="bg-white p-6 rounded-xl w-[420px] shadow-lg">
-      <h2 class="text-xl font-semibold mb-4">Редактирование профиля</h2>
+  <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50">
+    <div class="bg-white border border-teal-300 rounded-2xl shadow-xl w-full max-w-lg p-6">
+      <h2 class="text-2xl font-bold text-teal-800 mb-4 text-center">Редактирование профиля</h2>
 
-      <p v-if="serverError" class="text-red-600 mb-3 text-sm">
+      <p v-if="serverError" class="text-red-600 mb-3 text-sm text-center">
         {{ serverError }}
       </p>
 
-      <form @submit.prevent="submit" class="space-y-3">
-        <!-- Фамилия -->
-        <div>
-          <input
-            v-model="form.lastName"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.lastName }"
-            placeholder="Фамилия"
-          />
-          <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
+      <form @submit.prevent="submit" class="space-y-4">
+        <!-- ФИО -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <input
+              v-model="form.lastName"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.lastName }"
+              placeholder="Фамилия"
+            />
+            <p v-if="errors.lastName" class="text-red-600 text-xs mt-1">{{ errors.lastName }}</p>
+          </div>
+
+          <div>
+            <input
+              v-model="form.firstName"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.firstName }"
+              placeholder="Имя"
+            />
+            <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
+          </div>
+
+          <div class="md:col-span-2">
+            <input
+              v-model="form.middleName"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.middleName }"
+              placeholder="Отчество"
+            />
+            <p v-if="errors.middleName" class="text-red-600 text-xs mt-1">
+              {{ errors.middleName }}
+            </p>
+          </div>
         </div>
 
-        <!-- Имя -->
-        <div>
-          <input
-            v-model="form.firstName"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.firstName }"
-            placeholder="Имя"
-          />
-          <p v-if="errors.firstName" class="text-red-600 text-xs mt-1">{{ errors.firstName }}</p>
-        </div>
+        <!-- Дата рождения + Пол -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1 text-gray-700">Дата рождения</label>
+            <input
+              type="date"
+              v-model="form.birthDate"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.birthDate }"
+            />
+            <p v-if="errors.birthDate" class="text-red-600 text-xs mt-1">
+              {{ errors.birthDate }}
+            </p>
+          </div>
 
-        <!-- Отчество -->
-        <div>
-          <input
-            v-model="form.middleName"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.middleName }"
-            placeholder="Отчество"
-          />
-          <p v-if="errors.middleName" class="text-red-600 text-xs mt-1">{{ errors.middleName }}</p>
-        </div>
-
-        <!-- Дата рождения -->
-        <div>
-          <label class="block text-sm">Дата рождения</label>
-          <input
-            type="date"
-            v-model="form.birthDate"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.birthDate }"
-          />
-          <p v-if="errors.birthDate" class="text-red-600 text-xs mt-1">{{ errors.birthDate }}</p>
-        </div>
-
-        <!-- Пол -->
-        <div>
-          <label class="block text-sm">Пол</label>
-          <select v-model="form.gender" class="w-full px-3 py-2 border rounded-lg">
-            <option value="MALE">Мужской</option>
-            <option value="FEMALE">Женский</option>
-          </select>
+          <div>
+            <label class="block text-sm mb-1 text-gray-700">Пол</label>
+            <select
+              v-model="form.gender"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm bg-white"
+            >
+              <option value="MALE">Мужской</option>
+              <option value="FEMALE">Женский</option>
+            </select>
+          </div>
         </div>
 
         <!-- Телефон -->
         <div>
           <input
             v-model="form.phone"
-            class="w-full px-3 py-2 border rounded-lg"
+            class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
             :class="{ 'border-red-500': errors.phone }"
             placeholder="Телефон (9 цифр)"
           />
           <p v-if="errors.phone" class="text-red-600 text-xs mt-1">{{ errors.phone }}</p>
         </div>
 
-        <!-- Область -->
-        <div>
-          <input
-            v-model="form.region"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.region }"
-            placeholder="Область"
-          />
-          <p v-if="errors.region" class="text-red-600 text-xs mt-1">{{ errors.region }}</p>
+        <!-- Адрес -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <input
+              v-model="form.region"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.region }"
+              placeholder="Область"
+            />
+            <p v-if="errors.region" class="text-red-600 text-xs mt-1">{{ errors.region }}</p>
+          </div>
+
+          <div>
+            <input
+              v-model="form.city"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.city }"
+              placeholder="Город"
+            />
+            <p v-if="errors.city" class="text-red-600 text-xs mt-1">{{ errors.city }}</p>
+          </div>
+
+          <div>
+            <input
+              v-model="form.street"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.street }"
+              placeholder="Улица"
+            />
+            <p v-if="errors.street" class="text-red-600 text-xs mt-1">{{ errors.street }}</p>
+          </div>
+
+          <div>
+            <input
+              v-model="form.houseNumber"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.houseNumber }"
+              placeholder="Дом"
+            />
+            <p v-if="errors.houseNumber" class="text-red-600 text-xs mt-1">
+              {{ errors.houseNumber }}
+            </p>
+          </div>
+
+          <div class="md:col-span-2">
+            <input
+              v-model="form.apartment"
+              class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
+              :class="{ 'border-red-500': errors.apartment }"
+              placeholder="Квартира"
+            />
+            <p v-if="errors.apartment" class="text-red-600 text-xs mt-1">
+              {{ errors.apartment }}
+            </p>
+          </div>
         </div>
 
-        <!-- Город -->
-        <div>
-          <input
-            v-model="form.city"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.city }"
-            placeholder="Город"
-          />
-          <p v-if="errors.city" class="text-red-600 text-xs mt-1">{{ errors.city }}</p>
+        <!-- Кнопки -->
+        <div class="space-y-3 pt-2">
+          <button
+            class="w-full bg-blue-600 text-white py-3 rounded-lg shadow hover:bg-blue-700 transition"
+          >
+            Сохранить
+          </button>
+
+          <button
+            type="button"
+            class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg shadow hover:bg-gray-300 transition"
+            @click="$emit('close')"
+          >
+            Отмена
+          </button>
         </div>
-
-        <!-- Улица -->
-        <div>
-          <input
-            v-model="form.street"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.street }"
-            placeholder="Улица"
-          />
-          <p v-if="errors.street" class="text-red-600 text-xs mt-1">{{ errors.street }}</p>
-        </div>
-
-        <!-- Дом -->
-        <div>
-          <input
-            v-model="form.houseNumber"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.houseNumber }"
-            placeholder="Дом"
-          />
-          <p v-if="errors.houseNumber" class="text-red-600 text-xs mt-1">
-            {{ errors.houseNumber }}
-          </p>
-        </div>
-
-        <!-- Квартира -->
-        <div>
-          <input
-            v-model="form.apartment"
-            class="w-full px-3 py-2 border rounded-lg"
-            :class="{ 'border-red-500': errors.apartment }"
-            placeholder="Квартира"
-          />
-          <p v-if="errors.apartment" class="text-red-600 text-xs mt-1">{{ errors.apartment }}</p>
-        </div>
-
-        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-          Сохранить
-        </button>
-
-        <button
-          type="button"
-          class="w-full bg-gray-300 py-2 rounded-lg hover:bg-gray-400"
-          @click="$emit('close')"
-        >
-          Отмена
-        </button>
       </form>
     </div>
   </div>
@@ -161,13 +174,10 @@ const form = ref({
   lastName: props.patient.lastName,
   middleName: props.patient.middleName,
   birthDate: props.patient.birthDate,
-  gender: props.patient.gender, // MALE / FEMALE
-
-  // убираем +375
+  gender: props.patient.gender,
   phone: props.patient.phone.startsWith('+375')
     ? props.patient.phone.slice(4)
     : props.patient.phone.replace(/\D/g, ''),
-
   region: props.patient.region,
   city: props.patient.city,
   street: props.patient.street,

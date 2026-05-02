@@ -129,11 +129,16 @@ function openShift(doctor: any, shift: any | null) {
 </script>
 
 <template>
-  <div class="border rounded-lg p-4 shadow-sm bg-white flex flex-col gap-3">
+  <div
+    class="bg-white border border-teal-300 rounded-xl shadow-md p-5 flex flex-col gap-4 hover:shadow-lg transition"
+  >
     <!-- Заголовок -->
-    <div class="flex justify-between items-center cursor-pointer" @click="expanded = !expanded">
+    <div
+      class="flex justify-between items-center cursor-pointer pb-2 border-b border-gray-200"
+      @click="expanded = !expanded"
+    >
       <div>
-        <h2 class="text-xl font-semibold">Кабинет №{{ cabinet.number }}</h2>
+        <h2 class="text-2xl font-bold text-teal-800">Кабинет №{{ cabinet.number }}</h2>
         <p class="text-sm text-gray-500">
           {{ cabinet.workingHoursStart }} — {{ cabinet.workingHoursEnd }}
         </p>
@@ -141,8 +146,12 @@ function openShift(doctor: any, shift: any | null) {
 
       <span
         v-if="isAdmin"
-        class="px-2 py-1 rounded text-xs"
-        :class="cabinet.isActive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'"
+        class="px-3 py-1 rounded-full text-xs font-semibold shadow-sm"
+        :class="
+          cabinet.isActive
+            ? 'bg-green-100 text-green-700 border border-green-300'
+            : 'bg-red-100 text-red-700 border border-red-300'
+        "
       >
         {{ cabinet.isActive ? 'Активен' : 'Неактивен' }}
       </span>
@@ -150,7 +159,7 @@ function openShift(doctor: any, shift: any | null) {
 
     <!-- Свернутое -->
     <div v-if="!expanded" class="text-gray-700">
-      <p class="mt-2 font-semibold">Специализации врачей:</p>
+      <p class="mt-1 font-semibold text-teal-700">Специализации врачей:</p>
       <p class="ml-1 text-gray-600">
         {{
           cabinet.doctors.length === 0
@@ -161,22 +170,25 @@ function openShift(doctor: any, shift: any | null) {
     </div>
 
     <!-- Развернутое -->
-    <div v-else class="space-y-4 text-gray-700">
+    <div v-else class="space-y-5 text-gray-700">
       <!-- Параметры кабинета -->
-      <div v-if="isAdmin" class="bg-gray-50 p-3 rounded border">
+      <div
+        v-if="isAdmin"
+        class="bg-teal-50 border border-teal-200 rounded-lg p-4 shadow-sm space-y-1"
+      >
         <p><b>Специализация кабинета:</b> {{ cabinet.specialization }}</p>
         <p><b>Длительность слота:</b> {{ cabinet.slotDuration }} мин</p>
         <p><b>Рабочее время:</b> {{ cabinet.workingHoursStart }}–{{ cabinet.workingHoursEnd }}</p>
       </div>
 
       <!-- Навигация по неделям -->
-      <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center justify-between gap-3">
         <button
-          class="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 disabled:opacity-40"
+          class="px-3 py-1.5 text-sm rounded-lg border border-teal-300 bg-white hover:bg-teal-50 disabled:opacity-40"
           @click.stop="prevWeek"
           :disabled="weekOffset === 0"
         >
-          ←
+          ← Неделя
         </button>
 
         <div class="flex-1 flex justify-center gap-2 overflow-x-auto">
@@ -184,11 +196,11 @@ function openShift(doctor: any, shift: any | null) {
             v-for="d in days"
             :key="d.iso"
             @click.stop="selectedDate = d.iso"
-            class="px-3 py-2 rounded border text-sm flex flex-col items-center min-w-[64px]"
+            class="px-4 py-2 rounded-lg border text-sm flex flex-col items-center min-w-[70px] shadow-sm"
             :class="
               selectedDate === d.iso
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-800'
+                ? 'bg-teal-600 text-white border-teal-600'
+                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
             "
           >
             <span class="font-semibold">{{ d.label }}</span>
@@ -197,28 +209,28 @@ function openShift(doctor: any, shift: any | null) {
         </div>
 
         <button
-          class="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50 disabled:opacity-40"
+          class="px-3 py-1.5 text-sm rounded-lg border border-teal-300 bg-white hover:bg-teal-50 disabled:opacity-40"
           @click.stop="nextWeek"
           :disabled="weekOffset === 4"
         >
-          →
+          Неделя →
         </button>
       </div>
 
       <!-- Врачи и смены -->
       <div v-if="selectedDate">
-        <p class="font-semibold mb-2">
+        <p class="font-semibold mb-3 text-teal-800 text-lg">
           Расписание на {{ days.find((d) => d.iso === selectedDate)?.display }}:
         </p>
 
         <div
           v-for="item in doctorsWithShiftsForDay"
           :key="item.doctor.id"
-          class="border rounded-lg p-3 bg-gray-50 mb-3"
+          class="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm"
         >
           <div class="flex justify-between items-center">
             <div>
-              <p class="font-semibold">
+              <p class="font-semibold text-gray-900">
                 {{ item.doctor.lastName }} {{ item.doctor.firstName }}
                 <span v-if="item.doctor.middleName">{{ item.doctor.middleName }}</span>
               </p>
@@ -227,35 +239,41 @@ function openShift(doctor: any, shift: any | null) {
 
             <button
               @click.stop="openDoctor(item.doctor.id)"
-              class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+              class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
             >
               Открыть
             </button>
           </div>
 
           <div class="mt-3">
-            <p class="font-semibold text-sm mb-1">Смены:</p>
+            <p class="font-semibold text-sm mb-1 text-teal-700">Смена:</p>
 
             <ul class="ml-2 space-y-1">
-              <li v-for="s in item.shifts" :key="s.id" class="flex items-center gap-3 text-sm">
-                <span>🕒 {{ s.startTime }}–{{ s.endTime }}</span>
+              <li
+                v-for="s in item.shifts"
+                :key="s.id"
+                class="flex items-center gap-3 text-sm bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm"
+              >
+                <span class="text-gray-700">🕒 {{ s.startTime }}–{{ s.endTime }}</span>
 
                 <button
                   v-if="isAdmin"
                   @click.stop="openShift(item.doctor, s)"
-                  class="text-blue-600 text-xs underline"
+                  class="text-blue-600 text-xs underline hover:text-blue-800"
                 >
                   Изменить
                 </button>
               </li>
 
-              <li v-if="item.shifts.length === 0" class="text-gray-500 ml-2 text-sm">Нет смен</li>
+              <li v-if="item.shifts.length === 0" class="text-gray-500 ml-2 text-sm italic">
+                Нет смен
+              </li>
             </ul>
 
             <button
               v-if="isAdmin"
               @click.stop="openShift(item.doctor, null)"
-              class="mt-2 text-xs text-green-700 underline"
+              class="mt-2 text-xs text-green-700 underline hover:text-green-900"
             >
               + Создать смену
             </button>
@@ -264,28 +282,26 @@ function openShift(doctor: any, shift: any | null) {
       </div>
 
       <!-- Управление кабинетом -->
-      <div v-if="isAdmin" class="mt-3 flex gap-3">
+      <div v-if="isAdmin" class="mt-4 flex gap-3">
         <button
           @click.stop="emit('edit-cabinet', cabinet)"
-          class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+          class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow"
         >
           Редактировать
         </button>
 
-        <!-- Активировать -->
         <button
           v-if="!cabinet.isActive"
           @click.stop="activate"
-          class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow"
         >
           Активировать
         </button>
 
-        <!-- Деактивировать -->
         <button
           v-if="cabinet.isActive && !confirmDelete"
           @click.stop="confirmDelete = true"
-          class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow"
         >
           Деактивировать
         </button>
@@ -293,13 +309,13 @@ function openShift(doctor: any, shift: any | null) {
         <div v-else-if="cabinet.isActive" class="flex gap-3">
           <button
             @click.stop="deactivate"
-            class="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800"
+            class="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 shadow"
           >
             Подтвердить
           </button>
           <button
             @click.stop="confirmDelete = false"
-            class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+            class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 shadow"
           >
             Отмена
           </button>

@@ -1,4 +1,3 @@
-// src/store/auth.store.ts
 import { defineStore } from 'pinia'
 import { authApi } from '@/api/auth'
 import { markLoggedOut } from '@/api/axios'
@@ -6,15 +5,23 @@ import { markLoggedOut } from '@/api/axios'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     accessToken: localStorage.getItem('accessToken'),
-    user: null,
+    user: null as null | {
+      id: number
+      email: string
+      username: string
+      role: 'PATIENT' | 'DOCTOR' | 'ADMIN'
+    },
     ready: false,
   }),
 
   actions: {
+    // --- LOGIN ---
     async login(email: string, password: string) {
       try {
         const res = await authApi.login(email, password)
+
         const access = res.accessToken
+        if (!access) return false
 
         this.accessToken = access
         localStorage.setItem('accessToken', access)
@@ -26,19 +33,27 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // --- REGISTER ---
     async register(username: string, email: string, password: string) {
-      const res = await authApi.register(username, email, password)
-      const access = res.accessToken
+      try {
+        const res = await authApi.register(username, email, password)
 
-      this.accessToken = access
-      localStorage.setItem('accessToken', access)
+        const access = res.accessToken
+        if (!access) return false
 
-      await this.loadMe()
-      return true
+        this.accessToken = access
+        localStorage.setItem('accessToken', access)
+
+        await this.loadMe()
+        return true
+      } catch {
+        return false
+      }
     },
 
+    // --- LOAD USER ---
     async loadMe() {
-      // Нет токена → пользователь не авторизован
+      // Нет токена → не авторизован
       if (!this.accessToken) {
         this.user = null
         this.ready = true
@@ -47,17 +62,19 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const res = await authApi.me()
+
+        // backend возвращает user напрямую
         this.user = res
       } catch {
-        // 401, токен протух, пользователь не авторизован
+        // токен протух → выходим
         this.user = null
       }
 
-      // ВАЖНО: ВСЕГДА завершаем loadMe()
       this.ready = true
       return true
     },
 
+    // --- LOGOUT ---
     async logout() {
       try {
         await authApi.logout()
@@ -65,12 +82,15 @@ export const useAuthStore = defineStore('auth', {
         // сервер может быть недоступен — игнорируем
       }
 
+      // запрещаем axios делать refresh
       markLoggedOut()
 
+      // чистим токен
       localStorage.removeItem('accessToken')
       this.accessToken = null
       this.user = null
 
+      // полный сброс состояния
       window.location.href = '/'
     },
   },
