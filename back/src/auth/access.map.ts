@@ -7,8 +7,8 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /auth/logout': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- DOCTORS ---
-  'GET /doctors/active': ['ADMIN', 'DOCTOR', 'PATIENT'], // публичный список активных врачей
-  'GET /doctors/inactive': ['ADMIN'], // только админ
+  'GET /doctors/active': 'PUBLIC', // ← теперь действительно публичный
+  'GET /doctors/inactive': ['ADMIN'],
 
   'GET /doctors/:id': 'PUBLIC',
   'GET /doctors/user/:userId': ['PATIENT', 'DOCTOR', 'ADMIN'],
@@ -19,7 +19,6 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /doctors': ['ADMIN'],
   'PATCH /doctors/:id': ['ADMIN', 'DOCTOR'],
 
-  // деактивация / активация врача
   'PATCH /doctors/:id/deactivate': ['ADMIN'],
   'PATCH /doctors/:id/activate': ['ADMIN'],
 
@@ -39,7 +38,6 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
 
   'PATCH /patients/:id': ['PATIENT', 'ADMIN'],
 
-  // деактивация / активация пациента
   'PATCH /patients/:id/deactivate': ['ADMIN'],
   'PATCH /patients/:id/activate': ['ADMIN'],
 

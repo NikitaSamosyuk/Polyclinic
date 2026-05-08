@@ -57,6 +57,7 @@ const isPatient = computed(() => auth.user?.role === 'PATIENT')
         <li><router-link to="/" class="hover:text-teal-900">Главная</router-link></li>
         <li><router-link to="/cabinets" class="hover:text-teal-900">Кабинеты</router-link></li>
         <li><router-link to="/doctors" class="hover:text-teal-900">Врачи</router-link></li>
+        <li><router-link to="/about" class="hover:text-teal-900">О нас</router-link></li>
 
         <li v-if="isAdmin || isDoctor">
           <router-link to="/patients" class="hover:text-teal-900">Пациенты</router-link>

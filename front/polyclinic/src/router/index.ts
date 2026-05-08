@@ -6,6 +6,9 @@ const Authorization = () => import('@/pages/Login/Authorization.vue')
 const Registration = () => import('@/pages/Login/Registration.vue')
 const Profile = () => import('@/pages/Profile.vue')
 
+const About = () => import ('@/pages/About.vue')
+const Emblem = () => import ('@/pages/Emblem.vue')
+
 const Doctors = () => import('@/pages/Doctors.vue')
 const Patients = () => import('@/pages/Patients.vue')
 const PatientCard = () => import('@/components/PatientCard.vue')
@@ -34,6 +37,8 @@ const routes = [
 
   { path: '/auth', name: 'Authorization', component: Authorization },
   { path: '/register', name: 'Registration', component: Registration },
+  { path: '/about', name: 'About', component: About },
+  { path: '/emblem', name: 'Emblem', component: Emblem },
 
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
 

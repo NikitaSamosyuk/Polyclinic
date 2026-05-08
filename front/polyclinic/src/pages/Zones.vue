@@ -31,9 +31,13 @@ const role = localStorage.getItem('role')
 const isAdmin = role === 'ADMIN'
 
 async function load() {
+  loading.value = true
   try {
     const res = await api.get('/therapist-zones')
     zones.value = res.data
+
+    // 🔥 сразу раскрываем всех врачей, чтобы зоны были видны
+    openedDoctorIds.value = Array.from(new Set(zones.value.map((z: any) => z.doctorId)))
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ошибка загрузки'
   } finally {
@@ -208,7 +212,7 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- Список врачей -->
+    <!-- Список -->
     <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
     <div v-else-if="error" class="text-red-600 text-lg text-center py-10">{{ error }}</div>
 

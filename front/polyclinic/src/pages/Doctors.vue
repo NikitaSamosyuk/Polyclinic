@@ -33,7 +33,8 @@ const selectedDoctor = ref<any | null>(null)
 async function load() {
   loading.value = true
   try {
-    const res = isAdmin ? await doctorsApi.getAll() : await doctorsApi.getAllActive()
+    // ВСЕГДА грузим активных врачей — доступно всем
+    const res = await doctorsApi.getAllActive()
     doctors.value = res
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ошибка загрузки врачей'
@@ -175,7 +176,6 @@ onMounted(load)
         v-for="d in paginatedDoctors"
         :key="d.id"
         :doctor="d"
-        adminMode
         @edit="requestEdit"
         @activate="requestActivate"
         @deactivate="requestDeactivate"

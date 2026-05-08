@@ -37,7 +37,7 @@ export class DatabaseInitService implements OnModuleInit {
       },
     });
 
-    // 2. Врачи
+    // 2. Врачи (users)
     const doctorsList = [
       {
         first: 'Владислав',
@@ -175,7 +175,7 @@ export class DatabaseInitService implements OnModuleInit {
       orderBy: { id: 'asc' },
     });
 
-    // 4. Профили врачей
+    // 4. doctorProfiles
     const doctorProfilesData = doctorsList.map((d, i) => ({
       userId: doctorUsers[i].id,
       firstName: d.first,
@@ -192,6 +192,35 @@ export class DatabaseInitService implements OnModuleInit {
     const doctorProfiles = await this.prisma.doctor.findMany({
       orderBy: { id: 'asc' },
     });
+
+    // 4.1 Зоны терапевтов
+    console.log('--- Создаём тестовые зоны терапевтов ---');
+
+    const therapistDoctors = doctorProfiles.filter((d) => d.isTherapist);
+
+    const zonesData = [
+      { street: 'ленина', houses: ['1-20', '22', '24-30'] },
+      { street: 'победы', houses: ['5', '7', '9-15'] },
+      { street: 'советская', houses: ['10-50'] },
+    ];
+
+    let zoneIndex = 0;
+
+    for (const doc of therapistDoctors) {
+      const z = zonesData[zoneIndex % zonesData.length];
+
+      await this.prisma.therapistAddressZone.create({
+        data: {
+          doctorId: doc.id,
+          street: z.street,
+          houses: z.houses,
+        },
+      });
+
+      zoneIndex++;
+    }
+
+    console.log('--- Зоны терапевтов созданы! ---');
 
     // 5. Шаблоны расписания
     for (const doc of doctorProfiles) {
@@ -251,12 +280,12 @@ export class DatabaseInitService implements OnModuleInit {
       houseNumber: `${(i % 50) + 1}`,
       apartment: `${(i % 100) + 1}`,
       medicalCardNumber: `MC-${100 + i}`,
-      primaryTherapistId: doctorProfiles[i % doctorProfiles.length].id,
+      primaryTherapistId: therapistDoctors[i % therapistDoctors.length].id,
     }));
 
     await this.prisma.patient.createMany({ data: patientProfilesData });
 
-    // 8. Создаём записи
+    // 8. Записи
     console.log('--- Создаём записи пациентов ---');
 
     const allDoctors = doctorProfiles;
@@ -303,7 +332,7 @@ export class DatabaseInitService implements OnModuleInit {
 
     console.log(`--- Создано ${createdAppointments} записей ---`);
 
-    // 9. Создаём визиты
+    // 9. Визиты
     console.log('--- Создаём визиты ---');
 
     const appointments = await this.prisma.appointment.findMany({
@@ -312,7 +341,6 @@ export class DatabaseInitService implements OnModuleInit {
 
     let visitsCreated = 0;
 
-    // 🔥 ЭТАЛОННЫЕ ПАПКИ (ты кладёшь туда реальные файлы)
     const sourceDirs = [
       path.join(process.cwd(), 'uploads', 'visits', '1'),
       path.join(process.cwd(), 'uploads', 'visits', '2'),
@@ -339,7 +367,6 @@ export class DatabaseInitService implements OnModuleInit {
         },
       });
 
-      // создаём папку визита
       const visitDir = path.join(
         process.cwd(),
         'uploads',
@@ -350,13 +377,9 @@ export class DatabaseInitService implements OnModuleInit {
         fs.mkdirSync(visitDir, { recursive: true });
       }
 
-      // выбираем случайную эталонную папку
       const src = randomItem(sourceDirs);
-
-      // читаем файлы из эталонной папки
       const files = fs.readdirSync(src);
 
-      // выбираем случайные 1–5 файлов
       const selected = [...files]
         .sort(() => Math.random() - 0.5)
         .slice(0, 1 + Math.floor(Math.random() * 5));
@@ -365,10 +388,8 @@ export class DatabaseInitService implements OnModuleInit {
         const srcPath = path.join(src, f);
         const dstPath = path.join(visitDir, f);
 
-        // копируем файл
         fs.copyFileSync(srcPath, dstPath);
 
-        // создаём запись в БД
         await this.prisma.attachedFile.create({
           data: {
             visitId: visit.id,
