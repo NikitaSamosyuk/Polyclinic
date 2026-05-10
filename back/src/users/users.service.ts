@@ -1,4 +1,3 @@
-// src/users/users.service.ts
 import {
   Injectable,
   BadRequestException,
@@ -14,10 +13,15 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        doctor: true,
+        patient: true,
+      },
+    });
   }
 
-  // --- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ-ПАЦИЕНТА ---
   async createUser(data: {
     email: string;
     username: string;
@@ -32,24 +36,24 @@ export class UsersService {
         passwordHash,
         role: Role.PATIENT,
       },
+      include: {
+        doctor: true,
+        patient: true,
+      },
     });
   }
 
-  // --- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ-ДОКТОРА ---
   async createDoctorUser(data: {
     email: string;
     username: string;
     password: string;
   }) {
-    // Проверка email
     const emailExists = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
     if (emailExists) {
       throw new BadRequestException('Email already taken');
     }
-
-    // ❗ Username НЕ проверяем — он может повторяться
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
@@ -61,21 +65,31 @@ export class UsersService {
         role: Role.DOCTOR,
         isActive: true,
       },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        role: true,
+      include: {
+        doctor: true,
+        patient: true,
       },
     });
   }
 
   async findById(id: number) {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        doctor: true,
+        patient: true,
+      },
+    });
   }
 
   async getById(id: number) {
-    return this.prisma.user.findUnique({ where: { id } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        doctor: true,
+        patient: true,
+      },
+    });
   }
 
   async updateAvatar(id: number, avatarUrl: string) {
@@ -116,12 +130,9 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        avatarUrl: true,
+      include: {
+        doctor: true,
+        patient: true,
       },
     });
   }

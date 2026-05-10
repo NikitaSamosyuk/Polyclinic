@@ -1,11 +1,10 @@
-// src/api/doctors.ts
 import api from './axios'
 
 export const doctorsApi = {
   // Создать врача (после создания user)
   async create(data: any) {
     const res = await api.post('/doctors', data)
-    return res.data
+    return res.data.doctor ?? res.data
   },
 
   // Получить врача по userId
@@ -70,9 +69,14 @@ export const doctorsApi = {
     const res = await api.patch(`/doctors/${id}/activate`, {})
     return res.data.doctor ?? res.data
   },
+
+  // Получить всех терапевтов
+  async getTherapists() {
+    const res = await api.get('/schedule/therapists')
+    return res.data
+  },
 }
 
-// Для публичной страницы врачей
 export function getDoctors() {
   return doctorsApi.getAllActive()
 }

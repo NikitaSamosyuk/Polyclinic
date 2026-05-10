@@ -82,4 +82,26 @@ export class DoctorShiftController {
 
     return this.shifts.delete(Number(id));
   }
+
+  @Post('cleanup/:doctorId')
+  async cleanup(@Req() req: AuthRequest, @Param('doctorId') doctorId: string) {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Недостаточно прав для очистки смен');
+    }
+
+    return this.shifts.cleanupForDoctor(Number(doctorId));
+  }
+
+  // автопродление недели
+  @Post('extend-week/:doctorId')
+  async extendWeek(
+    @Req() req: AuthRequest,
+    @Param('doctorId') doctorId: string,
+  ) {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Недостаточно прав для продления недели');
+    }
+
+    return this.shifts.extendWeekFromLast(Number(doctorId));
+  }
 }

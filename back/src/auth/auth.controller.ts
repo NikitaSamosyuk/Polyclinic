@@ -54,7 +54,6 @@ export class AuthController {
 
   @Get('me')
   async me(@Req() req) {
-    // CombinedAuthGuard уже проверил токен и положил payload в req.user
     const user = await this.users.getById(req.user.sub);
 
     return {
@@ -63,6 +62,10 @@ export class AuthController {
       username: user.username,
       role: user.role,
       avatarUrl: user.avatarUrl,
+      isActive: user.isActive,
+
+      doctor: user.doctor ?? null,
+      patient: user.patient ?? null,
     };
   }
 

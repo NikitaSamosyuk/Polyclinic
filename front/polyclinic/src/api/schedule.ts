@@ -7,7 +7,7 @@ export async function getSlotsForDoctor(doctorId: number, date: string) {
     })
     return res.data
   } catch (err) {
-    // Если врач не работает → возвращаем пустой результат
+    // Если врач не работает - возвращаем пустой результат
     if (err?.response?.status === 400) {
       return {
         doctorId,

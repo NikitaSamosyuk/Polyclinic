@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api/axios'
+
 import PatientCard from '@/components/PatientCard.vue'
 import DoctorModal from '@/components/DoctorModal.vue'
+
+import PatientEditModal from '@/pages/Admin/PatientEditModal.vue'
+import PatientDeactivateModal from '@/pages/Admin/PatientDeactivateModal.vue'
+import PatientActivateModal from '@/pages/Admin/PatientActivateModal.vue'
 
 const loading = ref(true)
 const patients = ref<any[]>([])
@@ -16,10 +21,29 @@ const selectedPatient = ref<any | null>(null)
 const showDoctorProfile = ref(false)
 const selectedDoctor = ref<any | null>(null)
 
+const role = ref<string | null>(null)
+
+// модалка
+const showEditModal = ref(false)
+const showDeactivateModal = ref(false)
+const showActivateModal = ref(false)
+
+// пагинация
+const currentPage = ref(1)
+const perPage = 12
+
 async function load() {
   try {
+    const me = await api.get('/auth/me')
+    role.value = me.data.role
+
     const res = await api.get('/patients')
-    patients.value = res.data
+    let data = res.data
+
+    // показываем только активных
+    data = data.filter((p: any) => p.user?.isActive)
+
+    patients.value = data
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ошибка загрузки пациентов'
   } finally {
@@ -29,6 +53,7 @@ async function load() {
 
 function applySearch() {
   searchQuery.value = searchInput.value.trim().toLowerCase()
+  currentPage.value = 1
 }
 
 const filteredPatients = computed(() => {
@@ -43,6 +68,13 @@ const filteredPatients = computed(() => {
     .sort((a, b) => a.lastName.localeCompare(b.lastName))
 })
 
+const paginatedPatients = computed(() => {
+  const start = (currentPage.value - 1) * perPage
+  return filteredPatients.value.slice(start, start + perPage)
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredPatients.value.length / perPage)))
+
 function togglePatient(p: any) {
   if (selectedPatient.value?.id === p.id) {
     selectedPatient.value = null
@@ -56,40 +88,62 @@ function openDoctorModal(doctor: any) {
   showDoctorProfile.value = true
 }
 
+function openEdit(p: any) {
+  selectedPatient.value = p
+  showEditModal.value = true
+}
+
+function openDeactivate(p: any) {
+  selectedPatient.value = p
+  showDeactivateModal.value = true
+}
+
+function openActivate(p: any) {
+  selectedPatient.value = p
+  showActivateModal.value = true
+}
+
+async function reloadAndReselect() {
+  const id = selectedPatient.value?.id
+  await load()
+  selectedPatient.value = patients.value.find((p) => p.id === id) || null
+}
+
 onMounted(load)
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto p-8 flex gap-10">
-    <!-- ЛЕВАЯ КОЛОНКА -->
-    <div class="w-1/2">
-      <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight mb-6">Пациенты</h1>
+  <div class="max-w-7xl mx-auto p-8 flex flex-col gap-10">
+    <!-- Заголовок -->
+    <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight">Пациенты</h1>
 
-      <!-- ПОИСК -->
-      <div class="relative mb-6">
-        <input
-          v-model="searchInput"
-          @keyup.enter="applySearch"
-          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
-          placeholder="Поиск по ФИО или номеру карты"
-        />
+    <!-- Поиск -->
+    <div class="relative mb-6">
+      <input
+        v-model="searchInput"
+        @keyup.enter="applySearch"
+        class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+        placeholder="Поиск по ФИО или номеру карты"
+      />
 
-        <button
-          @click="applySearch"
-          class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100 transition"
-        >
-          <img src="@/assets/look.png" alt="search" class="w-6 h-6 object-contain" />
-        </button>
-      </div>
+      <button
+        @click="applySearch"
+        class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100 transition"
+      >
+        <img src="@/assets/look.png" alt="search" class="w-6 h-6 object-contain" />
+      </button>
+    </div>
 
-      <!-- СОСТОЯНИЯ -->
-      <div v-if="loading" class="text-gray-600 text-lg">Загрузка...</div>
-      <div v-else-if="error" class="text-red-600 text-lg">{{ error }}</div>
+    <!-- Состояния -->
+    <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
+    <div v-else-if="error" class="text-red-600 text-lg text-center py-10">{{ error }}</div>
 
-      <!-- СПИСОК ПАЦИЕНТОВ -->
-      <div v-else class="space-y-3">
+    <!-- Контент -->
+    <div v-else class="flex gap-10">
+      <!-- ЛЕВАЯ КОЛОНКА -->
+      <div class="w-1/2 space-y-3">
         <div
-          v-for="p in filteredPatients"
+          v-for="p in paginatedPatients"
           :key="p.id"
           @click="togglePatient(p)"
           class="p-5 bg-white border border-teal-300 rounded-xl shadow-sm hover:shadow-md cursor-pointer transition"
@@ -104,19 +158,80 @@ onMounted(load)
             <span class="font-medium">{{ p.medicalCardNumber || '—' }}</span>
           </p>
         </div>
+
+        <!-- Пагинация -->
+        <div v-if="totalPages > 1" class="flex justify-center mt-6 gap-2">
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            @click="currentPage = page"
+            class="px-4 py-2 rounded-lg border border-teal-300 shadow-sm transition"
+            :class="
+              page === currentPage
+                ? 'bg-teal-600 text-white'
+                : 'bg-white hover:bg-teal-50 text-teal-800'
+            "
+          >
+            {{ page }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ПРАВАЯ КОЛОНКА -->
+      <div class="w-1/2">
+        <div v-if="selectedPatient" class="sticky top-6">
+          <PatientCard
+            :patient="selectedPatient"
+            :is-admin="role === 'ADMIN'"
+            @open-doctor="openDoctorModal"
+            @edit="openEdit"
+            @deactivate="openDeactivate"
+            @activate="openActivate"
+          />
+        </div>
+
+        <div v-else class="text-gray-500 text-lg mt-10">Выберите пациента из списка</div>
       </div>
     </div>
 
-    <!-- ПРАВАЯ КОЛОНКА -->
-    <div class="w-1/2">
-      <div v-if="selectedPatient" class="sticky top-6">
-        <PatientCard :patient="selectedPatient" @open-doctor="openDoctorModal" />
-      </div>
+    <!-- Модалки -->
+    <PatientEditModal
+      v-if="showEditModal && selectedPatient"
+      :patient="selectedPatient"
+      @close="showEditModal = false"
+      @updated="
+        () => {
+          showEditModal = false
+          reloadAndReselect()
+        }
+      "
+    />
 
-      <div v-else class="text-gray-500 text-lg mt-10">Выберите пациента из списка</div>
-    </div>
+    <PatientDeactivateModal
+      v-if="showDeactivateModal && selectedPatient"
+      :patient="selectedPatient"
+      @close="showDeactivateModal = false"
+      @updated="
+        () => {
+          showDeactivateModal = false
+          reloadAndReselect()
+        }
+      "
+    />
 
-    <!-- МОДАЛКА ВРАЧА -->
+    <PatientActivateModal
+      v-if="showActivateModal && selectedPatient"
+      :patient="selectedPatient"
+      @close="showActivateModal = false"
+      @updated="
+        () => {
+          showActivateModal = false
+          reloadAndReselect()
+        }
+      "
+    />
+
+    <!-- Модалка врача -->
     <DoctorModal
       v-if="showDoctorProfile"
       :doctor-id="selectedDoctor?.id"

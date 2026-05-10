@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { deactivateCabinet, updateCabinet } from '@/api/cabinets'
+
+import CabinetEditModal from '@/pages/Admin/CabinetEditModal.vue'
+import CabinetDeactivateModal from '@/pages/Admin/CabinetDeactivateModal.vue'
+import CabinetActivateModal from '@/pages/Admin/CabinetActivateModal.vue'
+import ShiftModal from '@/pages/Admin/ShiftModal.vue'
+import ExtendWeekModal from '@/pages/Admin/ExtendWeekModal.vue'
+import { getShiftsForDoctor } from '@/api/shifts'
 
 const props = defineProps<{
   cabinet: any
@@ -10,15 +16,26 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'updated'): void
   (e: 'open-doctor', id: number): void
-  (e: 'edit-cabinet', cabinet: any): void
-  (e: 'create-shift', payload: { doctor: any; shift: any | null; date: string }): void
 }>()
 
 const expanded = ref(false)
-const confirmDelete = ref(false)
 
-// --- Недели ---
-const weekOffset = ref(0) // теперь 0..4 → 5 недель
+const showEditModal = ref(false)
+const showDeactivateModal = ref(false)
+const showActivateModal = ref(false)
+const showShiftModal = ref(false)
+
+const showExtendWeekModal = ref(false)
+const extendWeekDoctorId = ref<number | null>(null)
+
+const shiftData = ref({
+  doctor: null,
+  shift: null,
+  date: null,
+  cabinet: null,
+})
+
+const weekOffset = ref(0)
 const selectedDate = ref<string | null>(null)
 
 const dayLabels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']
@@ -27,13 +44,17 @@ function getBaseMonday(): Date {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
+  const wd = today.getDay() // 0–6
   const monday = new Date(today)
-  const wd = today.getDay()
 
   if (wd === 0) monday.setDate(today.getDate() + 1)
   else monday.setDate(today.getDate() - (wd - 1))
 
   return monday
+}
+
+function formatISO(d: Date) {
+  return d.toLocaleDateString('en-CA') // YYYY-MM-DD
 }
 
 function getWeekDays(offset: number) {
@@ -48,7 +69,7 @@ function getWeekDays(offset: number) {
     d.setDate(monday.getDate() + i)
     d.setHours(0, 0, 0, 0)
 
-    const iso = d.toISOString().split('T')[0]
+    const iso = formatISO(d)
     const dd = String(d.getDate()).padStart(2, '0')
     const mm = String(d.getMonth() + 1).padStart(2, '0')
 
@@ -81,42 +102,31 @@ function prevWeek() {
 }
 
 function nextWeek() {
-  if (weekOffset.value < 4) weekOffset.value++ // 5 недель
+  if (weekOffset.value < 4) weekOffset.value++
 }
 
-// --- Смены ---
-function normalizeDateToIso(date: string | Date): string {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString().split('T')[0]
-}
+const doctorsWithShiftsForDay = ref([])
 
-const doctorsWithShiftsForDay = computed(() => {
-  if (!selectedDate.value) return []
+watch(
+  () => selectedDate.value,
+  async (date) => {
+    if (!date) {
+      doctorsWithShiftsForDay.value = []
+      return
+    }
 
-  const targetIso = selectedDate.value
-  const doctors = props.cabinet.doctors || []
-  const shifts = props.cabinet.shifts || []
+    const doctors = props.cabinet.doctors || []
+    const result = []
 
-  return doctors.map((doc: any) => {
-    const docShifts = shifts.filter((s: any) => {
-      if (!s || !s.date) return false
-      return normalizeDateToIso(s.date) === targetIso && s.doctorId === doc.id
-    })
+    for (const doc of doctors) {
+      const shifts = await getShiftsForDoctor(doc.id, date)
+      result.push({ doctor: doc, shifts })
+    }
 
-    return { doctor: doc, shifts: docShifts }
-  })
-})
-
-async function deactivate() {
-  await deactivateCabinet(props.cabinet.id)
-  emit('updated')
-}
-
-async function activate() {
-  await updateCabinet(props.cabinet.id, { isActive: true })
-  emit('updated')
-}
+    doctorsWithShiftsForDay.value = result
+  },
+  { immediate: true }
+)
 
 function openDoctor(id: number) {
   emit('open-doctor', id)
@@ -124,7 +134,20 @@ function openDoctor(id: number) {
 
 function openShift(doctor: any, shift: any | null) {
   if (!selectedDate.value) return
-  emit('create-shift', { doctor, shift, date: selectedDate.value })
+
+  shiftData.value = {
+    doctor,
+    shift,
+    date: selectedDate.value,
+    cabinet: props.cabinet,
+  }
+
+  showShiftModal.value = true
+}
+
+function openExtendWeek(doctorId: number) {
+  extendWeekDoctorId.value = doctorId
+  showExtendWeekModal.value = true
 }
 </script>
 
@@ -237,12 +260,22 @@ function openShift(doctor: any, shift: any | null) {
               <p class="text-sm text-gray-500">{{ item.doctor.specialization }}</p>
             </div>
 
-            <button
-              @click.stop="openDoctor(item.doctor.id)"
-              class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
-            >
-              Открыть
-            </button>
+            <div class="flex gap-2">
+              <button
+                @click.stop="openDoctor(item.doctor.id)"
+                class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
+              >
+                Открыть
+              </button>
+
+              <button
+                v-if="isAdmin"
+                @click.stop="openExtendWeek(item.doctor.id)"
+                class="px-3 py-1 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow"
+              >
+                Продлить неделю
+              </button>
+            </div>
           </div>
 
           <div class="mt-3">
@@ -284,43 +317,70 @@ function openShift(doctor: any, shift: any | null) {
       <!-- Управление кабинетом -->
       <div v-if="isAdmin" class="mt-4 flex gap-3">
         <button
-          @click.stop="emit('edit-cabinet', cabinet)"
+          @click.stop="showEditModal = true"
           class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow"
         >
           Редактировать
         </button>
 
         <button
-          v-if="!cabinet.isActive"
-          @click.stop="activate"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow"
-        >
-          Активировать
-        </button>
-
-        <button
-          v-if="cabinet.isActive && !confirmDelete"
-          @click.stop="confirmDelete = true"
+          v-if="cabinet.isActive"
+          @click.stop="showDeactivateModal = true"
           class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow"
         >
           Деактивировать
         </button>
 
-        <div v-else-if="cabinet.isActive" class="flex gap-3">
-          <button
-            @click.stop="deactivate"
-            class="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 shadow"
-          >
-            Подтвердить
-          </button>
-          <button
-            @click.stop="confirmDelete = false"
-            class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 shadow"
-          >
-            Отмена
-          </button>
-        </div>
+        <button
+          v-else
+          @click.stop="showActivateModal = true"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow"
+        >
+          Активировать
+        </button>
       </div>
     </div>
+
+    <!-- МОДАЛКИ -->
+    <CabinetEditModal
+      v-if="showEditModal"
+      :show="showEditModal"
+      :cabinet="cabinet"
+      @close="showEditModal = false"
+      @updated="emit('updated')"
+    />
+
+    <CabinetDeactivateModal
+      v-if="showDeactivateModal"
+      :cabinet="cabinet"
+      @close="showDeactivateModal = false"
+      @updated="emit('updated')"
+    />
+
+    <CabinetActivateModal
+      v-if="showActivateModal"
+      :cabinet="cabinet"
+      @close="showActivateModal = false"
+      @updated="emit('updated')"
+    />
+
+    <ShiftModal
+      v-if="showShiftModal"
+      :show="showShiftModal"
+      :doctor="shiftData.doctor"
+      :shift="shiftData.shift"
+      :date="shiftData.date"
+      :cabinet="shiftData.cabinet"
+      @close="showShiftModal = false"
+      @updated="emit('updated')"
+    />
+
+    <ExtendWeekModal
+      v-if="showExtendWeekModal"
+      :show="showExtendWeekModal"
+      :doctorId="extendWeekDoctorId"
+      @close="showExtendWeekModal = false"
+      @updated="emit('updated')"
+    />
   </div>
 </template>

@@ -31,7 +31,6 @@ async function bootstrap() {
     }),
   );
 
-  // ✔ Правильное подключение guard
   app.useGlobalGuards(app.get(CombinedAuthGuard));
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');

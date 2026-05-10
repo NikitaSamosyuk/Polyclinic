@@ -11,9 +11,6 @@ import { UpdateTherapistZoneDto } from './dto/update-zone.dto';
 export class TherapistZonesService {
   constructor(private prisma: PrismaService) {}
 
-  // ---------------------------------------------------------
-  // Получить все зоны
-  // ---------------------------------------------------------
   async getAll() {
     return this.prisma.therapistAddressZone.findMany({
       include: { doctor: true },
@@ -21,9 +18,6 @@ export class TherapistZonesService {
     });
   }
 
-  // ---------------------------------------------------------
-  // Получить зоны по врачу
-  // ---------------------------------------------------------
   async getByDoctor(doctorId: number) {
     return this.prisma.therapistAddressZone.findMany({
       where: { doctorId },
@@ -31,9 +25,6 @@ export class TherapistZonesService {
     });
   }
 
-  // ---------------------------------------------------------
-  // Получить зону по ID
-  // ---------------------------------------------------------
   async getById(id: number) {
     const zone = await this.prisma.therapistAddressZone.findUnique({
       where: { id },
@@ -44,9 +35,6 @@ export class TherapistZonesService {
     return zone;
   }
 
-  // ---------------------------------------------------------
-  // Создать зону
-  // ---------------------------------------------------------
   async create(dto: CreateTherapistZoneDto) {
     const doctor = await this.prisma.doctor.findUnique({
       where: { id: dto.doctorId },
@@ -65,9 +53,6 @@ export class TherapistZonesService {
     });
   }
 
-  // ---------------------------------------------------------
-  // Обновить зону
-  // ---------------------------------------------------------
   async update(id: number, dto: UpdateTherapistZoneDto) {
     await this.getById(id);
 
@@ -80,9 +65,6 @@ export class TherapistZonesService {
     });
   }
 
-  // ---------------------------------------------------------
-  // Удалить зону
-  // ---------------------------------------------------------
   async delete(id: number) {
     await this.getById(id);
 
@@ -91,9 +73,6 @@ export class TherapistZonesService {
     });
   }
 
-  // ---------------------------------------------------------
-  // Найти терапевта по адресу → выбрать самого незагруженного
-  // ---------------------------------------------------------
   async findTherapistByAddress(street: string, house: string) {
     const s = street.trim().toLowerCase();
     const h = house.trim().toLowerCase();
@@ -104,7 +83,7 @@ export class TherapistZonesService {
 
     const matchedZones = [];
 
-    // --- 1. Находим все подходящие зоны ---
+    // Находим все подходящие зоны
     for (const z of zones) {
       if (z.street !== s) continue;
 
@@ -149,7 +128,7 @@ export class TherapistZonesService {
     if (matchedZones.length === 0) return null;
     if (matchedZones.length === 1) return matchedZones[0];
 
-    // --- 2. Несколько зон → выбираем самого незагруженного терапевта ---
+    // Несколько зон - выбираем самого незагруженного терапевта
     const therapistIds = matchedZones.map((z) => z.doctorId);
 
     const loads = await this.prisma.patient.groupBy({
@@ -168,7 +147,7 @@ export class TherapistZonesService {
       if (!loadMap.has(id)) loadMap.set(id, 0);
     }
 
-    // --- 3. Находим терапевта с минимальной загрузкой ---
+    // Находим терапевта с минимальной загрузкой
     let bestZone = matchedZones[0];
     let bestLoad = loadMap.get(bestZone.doctorId) ?? 0;
 

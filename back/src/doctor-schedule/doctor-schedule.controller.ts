@@ -59,4 +59,25 @@ export class DoctorScheduleController {
 
     return this.schedule.generateShiftsForNextPeriod(Number(doctorId));
   }
+
+  @Post('cleanup')
+  async cleanup(@Req() req: AuthRequest, @Param('doctorId') doctorId: string) {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Недостаточно прав для очистки расписания');
+    }
+
+    return this.schedule.clearScheduleAndShiftsForDoctor(Number(doctorId));
+  }
+
+  @Post('extend-week')
+  async extendWeek(
+    @Req() req: AuthRequest,
+    @Param('doctorId') doctorId: string,
+  ) {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ForbiddenException('Недостаточно прав для продления недели');
+    }
+
+    return this.schedule.extendWeek(Number(doctorId));
+  }
 }

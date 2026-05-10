@@ -6,16 +6,19 @@ export class CreateCabinetDto {
   @IsString()
   number!: string;
 
-  // Может быть "комбинированная" или любая другая строка
+  @IsInt()
+  @IsOptional()
+  floor?: number;
+
   @IsString()
   specialization!: string;
 
   @IsString()
-  @Matches(TIME_REGEX, { message: 'workingHoursStart must be in HH:MM format' })
+  @Matches(TIME_REGEX)
   workingHoursStart!: string;
 
   @IsString()
-  @Matches(TIME_REGEX, { message: 'workingHoursEnd must be in HH:MM format' })
+  @Matches(TIME_REGEX)
   workingHoursEnd!: string;
 
   @IsInt()

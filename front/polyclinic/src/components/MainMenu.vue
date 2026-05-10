@@ -4,7 +4,6 @@ import { useAuthStore } from '@/store/auth.store'
 
 const auth = useAuthStore()
 
-// ВАЖНО: роли должны быть computed, а не константы
 const isAdmin = computed(() => auth.user?.role === 'ADMIN')
 const isDoctor = computed(() => auth.user?.role === 'DOCTOR')
 const isPatient = computed(() => auth.user?.role === 'PATIENT')

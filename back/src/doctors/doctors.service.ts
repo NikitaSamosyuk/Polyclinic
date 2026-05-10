@@ -1,4 +1,3 @@
-// src/doctors/doctors.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -42,10 +41,6 @@ export class DoctorsService {
     return doctors.map((d) => this.withDefaultPhoto(d) as T);
   }
 
-  // ============================================================
-  // СПИСКИ ВРАЧЕЙ
-  // ============================================================
-
   // Активные врачи
   async getAllActive(): Promise<DoctorWithRelations[]> {
     const doctors = await this.prisma.doctor.findMany({
@@ -67,10 +62,6 @@ export class DoctorsService {
 
     return this.withDefaultPhotoMany(doctors);
   }
-
-  // ============================================================
-  // ПОЛУЧЕНИЕ ВРАЧА
-  // ============================================================
 
   async getById(id: number): Promise<DoctorWithRelations> {
     const doctor = await this.prisma.doctor.findUnique({
@@ -94,10 +85,6 @@ export class DoctorsService {
     return this.withDefaultPhoto(doctor)!;
   }
 
-  // ============================================================
-  // ФОТО
-  // ============================================================
-
   async updatePhoto(userId: number, photoUrl: string): Promise<Doctor> {
     const doctor = await this.prisma.doctor.findFirst({ where: { userId } });
     if (!doctor) throw new NotFoundException('Doctor not found');
@@ -109,10 +96,6 @@ export class DoctorsService {
 
     return this.withDefaultPhoto(updated)!;
   }
-
-  // ============================================================
-  // СОЗДАНИЕ
-  // ============================================================
 
   async createDoctor(dto: CreateDoctorDto): Promise<Doctor> {
     const doctor = await this.prisma.doctor.create({
@@ -131,10 +114,6 @@ export class DoctorsService {
 
     return this.withDefaultPhoto(doctor)!;
   }
-
-  // ============================================================
-  // ОБНОВЛЕНИЕ
-  // ============================================================
 
   async updateDoctor(
     id: number,
@@ -172,10 +151,6 @@ export class DoctorsService {
     return this.withDefaultPhoto(updated)!;
   }
 
-  // ============================================================
-  // ДЕАКТИВАЦИЯ / АКТИВАЦИЯ
-  // ============================================================
-
   async deactivateDoctor(id: number): Promise<User> {
     const doctor = await this.prisma.doctor.findUnique({ where: { id } });
     if (!doctor) throw new NotFoundException('Doctor not found');
@@ -195,10 +170,6 @@ export class DoctorsService {
       data: { isActive: true },
     });
   }
-
-  // ============================================================
-  // ПАЦИЕНТЫ ВРАЧА
-  // ============================================================
 
   async getDoctorPatients(
     doctorId: number,
@@ -227,10 +198,6 @@ export class DoctorsService {
       orderBy: { lastName: 'asc' },
     });
   }
-
-  // ============================================================
-  // ЗОНЫ ТЕРАПЕВТА
-  // ============================================================
 
   async getDoctorZones(
     doctorId: number,

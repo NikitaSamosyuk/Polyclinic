@@ -4,10 +4,12 @@ import { useAuthStore } from '@/store/auth.store'
 const Home = () => import('@/pages/Home.vue')
 const Authorization = () => import('@/pages/Login/Authorization.vue')
 const Registration = () => import('@/pages/Login/Registration.vue')
+
 const Profile = () => import('@/pages/Profile.vue')
 
-const About = () => import ('@/pages/About.vue')
-const Emblem = () => import ('@/pages/Emblem.vue')
+const About = () => import('@/pages/About.vue')
+const Emblem = () => import('@/pages/Emblem.vue')
+const Blocked = () => import('@/pages/Blocked.vue')
 
 const Doctors = () => import('@/pages/Doctors.vue')
 const Patients = () => import('@/pages/Patients.vue')
@@ -39,39 +41,33 @@ const routes = [
   { path: '/register', name: 'Registration', component: Registration },
   { path: '/about', name: 'About', component: About },
   { path: '/emblem', name: 'Emblem', component: Emblem },
+  { path: '/blocked', name: 'Blocked', component: Blocked },
+
 
   { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
 
-  // --- APPOINTMENTS ---
   { path: '/appointments', name: 'Appointments', component: Appointments, meta: { requiresAuth: true } },
   { path: '/my-appointments', name: 'MyAppointments', component: MyAppointments, meta: { requiresAuth: true } },
 
   { path: '/doctor/:id/appointments', name: 'DoctorAppointments', component: DoctorAppointments, meta: { requiresAuth: true } },
 
-  // --- DOCTORS ---
   { path: '/doctors', name: 'Doctors', component: Doctors },
 
-  // --- PATIENTS ---
   { path: '/patients', name: 'Patients', component: Patients },
   { path: '/patients/:id', name: 'PatientCard', component: PatientCard, props: true },
 
-  // --- ZONES ---
   { path: '/zones', name: 'Zones', component: Zones, meta: { requiresAuth: true } },
 
-  // --- PERSONAL PROFILES ---
   { path: '/doctor/profile', name: 'DoctorProfile', component: DoctorProfile, meta: { requiresAuth: true } },
   { path: '/patient/profile', name: 'PatientProfile', component: PatientProfile, meta: { requiresAuth: true } },
   { path: '/admin/profile', name: 'AdminProfile', component: AdminProfile, meta: { requiresAuth: true } },
 
-  // --- CABINETS ---
   { path: '/cabinets', name: 'Cabinets', component: Cabinets },
-
-  // --- FALLBACK ---
-  { path: '/:pathMatch(.*)*', name: 'NotFound', component: Home },
 
   { path: '/visits', name: 'Visits', component: Visits, meta: { requiresAuth: true } },
   { path: '/my-visits', name: 'MyVisits', component: MyVisits, meta: { requiresAuth: true } },
 
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: Home },
 ]
 
 const router = createRouter({

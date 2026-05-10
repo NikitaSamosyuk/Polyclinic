@@ -2,10 +2,16 @@
 import { ref } from 'vue'
 
 import DoctorsManageModal from '@/pages/Admin/DoctorsManageModal.vue'
+import PatientsManageModal from '@/pages/Admin/PatientsManageModal.vue'
+import CabinetsManageModal from '@/pages/Admin/CabinetsManageModal.vue'
+
 import CreateDoctorUserModal from '@/pages/Admin/CreateDoctorUserModal.vue'
 import CreateDoctorProfileModal from '@/pages/Admin/CreateDoctorProfileModal.vue'
 
 const showManageDoctors = ref(false)
+const showManagePatients = ref(false)
+const showManageCabinets = ref(false)
+
 const showCreateUser = ref(false)
 const showCreateDoctor = ref(false)
 
@@ -45,6 +51,20 @@ function onDoctorCreated() {
       >
         Управление врачами
       </button>
+
+      <button
+        class="bg-blue-600 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-700 transition"
+        @click="showManagePatients = true"
+      >
+        Управление пациентами
+      </button>
+
+      <button
+        class="bg-purple-600 text-white px-6 py-3 rounded-lg shadow hover:bg-purple-700 transition"
+        @click="showManageCabinets = true"
+      >
+        Управление кабинетами
+      </button>
     </div>
 
     <!-- Модалки -->
@@ -62,5 +82,9 @@ function onDoctorCreated() {
     />
 
     <DoctorsManageModal v-if="showManageDoctors" @close="showManageDoctors = false" />
+
+    <PatientsManageModal v-if="showManagePatients" @close="showManagePatients = false" />
+
+    <CabinetsManageModal v-if="showManageCabinets" @close="showManageCabinets = false" />
   </div>
 </template>

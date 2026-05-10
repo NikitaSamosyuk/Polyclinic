@@ -17,10 +17,6 @@ export class PatientsService {
     private readonly zones: TherapistZonesService,
   ) {}
 
-  // ============================================================
-  // ВАЛИДАЦИИ
-  // ============================================================
-
   private validateRussian(value: string, field: string): string {
     const trimmed = value.trim();
     if (!trimmed) throw new BadRequestException(`${field} обязательно`);
@@ -117,10 +113,6 @@ export class PatientsService {
     return raw.trim().toLowerCase();
   }
 
-  // ============================================================
-  // АВТО-НАЗНАЧЕНИЕ ТЕРАПЕВТА
-  // ============================================================
-
   private async autoAssignTherapist(
     region: string,
     city: string,
@@ -148,10 +140,6 @@ export class PatientsService {
 
     return therapists[0].id;
   }
-
-  // ============================================================
-  // СОЗДАНИЕ ПАЦИЕНТА
-  // ============================================================
 
   async createPatient(userId: number, dto: RegisterPatientDto) {
     const exists = await this.prisma.patient.findUnique({ where: { userId } });
@@ -208,10 +196,6 @@ export class PatientsService {
     });
   }
 
-  // ============================================================
-  // АКТИВАЦИЯ / ДЕАКТИВАЦИЯ
-  // ============================================================
-
   async deactivatePatient(id: number): Promise<User> {
     const patient = await this.prisma.patient.findUnique({ where: { id } });
     if (!patient) throw new NotFoundException('Пациент не найден');
@@ -231,10 +215,6 @@ export class PatientsService {
       data: { isActive: true },
     });
   }
-
-  // ============================================================
-  // ПОЛУЧЕНИЕ ПРОФИЛЯ
-  // ============================================================
 
   async getByUserId(userId: number) {
     const patient = await this.prisma.patient.findFirst({
@@ -293,10 +273,6 @@ export class PatientsService {
     return patient;
   }
 
-  // ============================================================
-  // СПИСКИ ПАЦИЕНТОВ
-  // ============================================================
-
   async getAllActive() {
     return this.prisma.patient.findMany({
       where: { user: { isActive: true } },
@@ -343,10 +319,6 @@ export class PatientsService {
       orderBy: { lastName: 'asc' },
     });
   }
-
-  // ============================================================
-  // ОБНОВЛЕНИЕ
-  // ============================================================
 
   async updatePatient(
     patientId: number,
@@ -449,10 +421,6 @@ export class PatientsService {
       },
     });
   }
-
-  // ============================================================
-  // ПОИСК
-  // ============================================================
 
   async search(query: string, actorUserId: number, actorRole: string) {
     if (actorRole !== 'DOCTOR' && actorRole !== 'ADMIN') {

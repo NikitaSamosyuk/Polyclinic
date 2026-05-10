@@ -51,11 +51,13 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'DELETE /cabinets/:id': ['ADMIN'],
 
   // --- SHIFTS ---
-  'GET /shifts': ['DOCTOR', 'ADMIN'],
-  'GET /shifts/:id': ['DOCTOR', 'ADMIN'],
+  'GET /shifts': 'PUBLIC',
+  'GET /shifts/:id': 'PUBLIC',
   'POST /shifts': ['ADMIN'],
   'PATCH /shifts/:id': ['ADMIN'],
   'DELETE /shifts/:id': ['ADMIN'],
+  'POST /shifts/cleanup/:doctorId': ['ADMIN'],
+  'POST /shifts/extend-week/:doctorId': ['ADMIN'],
 
   // --- SCHEDULE ---
   'GET /schedule/doctor': ['PATIENT', 'DOCTOR', 'ADMIN'],

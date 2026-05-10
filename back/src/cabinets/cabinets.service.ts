@@ -50,6 +50,7 @@ export class CabinetsService {
     return this.prisma.cabinet.create({
       data: {
         number: dto.number.trim(),
+        floor: dto.floor ?? null,
         specialization,
         workingHoursStart: dto.workingHoursStart,
         workingHoursEnd: dto.workingHoursEnd,
@@ -75,6 +76,8 @@ export class CabinetsService {
     return this.prisma.cabinet.update({
       where: { id },
       data: {
+        number: dto.number?.trim() ?? existing.number,
+        floor: dto.floor ?? existing.floor,
         specialization,
         workingHoursStart,
         workingHoursEnd,

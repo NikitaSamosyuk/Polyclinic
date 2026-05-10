@@ -21,7 +21,6 @@ const showDeactivate = ref(false)
 const createdUserId = ref<number | null>(null)
 const selectedDoctor = ref<any | null>(null)
 
-// PAGINATION
 const page = ref(1)
 const perPage = 8
 

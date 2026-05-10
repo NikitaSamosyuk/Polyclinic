@@ -235,4 +235,135 @@ export class DoctorShiftService {
       include: { cabinet: true, doctor: true },
     });
   }
+
+  // чистка смен врача после смены кабинета / по запросу
+  async cleanupForDoctor(doctorId: number): Promise<number> {
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id: doctorId },
+      include: { cabinet: true },
+    });
+
+    if (!doctor) {
+      throw new NotFoundException('Врач не найден');
+    }
+
+    // если врача перевели и cabinetId изменился — чистим все его смены
+    const result = await this.prisma.doctorShift.deleteMany({
+      where: { doctorId },
+    });
+
+    return result.count;
+  }
+
+  // автопродление по последнему расписанию
+  private startOfDay(d: Date): Date {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  }
+
+  private addDays(d: Date, days: number): Date {
+    const x = new Date(d);
+    x.setDate(x.getDate() + days);
+    return this.startOfDay(x);
+  }
+
+  private getMondayOfWeek(d: Date): Date {
+    const x = this.startOfDay(d);
+    const wd = x.getDay(); // 0 - вс, 1 - пн, ...
+    const diff = wd === 0 ? -6 : 1 - wd; // смещение до понедельника
+    x.setDate(x.getDate() + diff);
+    return this.startOfDay(x);
+  }
+
+  async extendWeekFromLast(doctorId: number): Promise<ShiftWithRelations[]> {
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id: doctorId },
+      include: { cabinet: true },
+    });
+
+    if (!doctor) {
+      throw new NotFoundException('Врач не найден');
+    }
+    if (!doctor.cabinetId || !doctor.cabinet) {
+      throw new BadRequestException('У врача не назначен кабинет');
+    }
+
+    // находим последнюю смену врача
+    const lastShift = await this.prisma.doctorShift.findFirst({
+      where: { doctorId },
+      orderBy: { date: 'desc' },
+    });
+
+    if (!lastShift) {
+      throw new BadRequestException(
+        'У врача нет смен для продления расписания',
+      );
+    }
+
+    const lastWeekMonday = this.getMondayOfWeek(lastShift.date);
+    const nextWeekMonday = this.addDays(lastWeekMonday, 7);
+    const nextWeekSunday = this.addDays(nextWeekMonday, 6);
+
+    // берём все смены за последнюю неделю
+    const weekShifts = await this.prisma.doctorShift.findMany({
+      where: {
+        doctorId,
+        date: {
+          gte: lastWeekMonday,
+          lte: this.startOfDay(this.addDays(lastWeekMonday, 6)),
+        },
+      },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    });
+
+    if (weekShifts.length === 0) {
+      throw new BadRequestException(
+        'Не найдено смен за последнюю неделю для продления',
+      );
+    }
+
+    // создаём смены на следующую неделю
+    for (const s of weekShifts) {
+      const offsetDays =
+        (this.startOfDay(s.date).getTime() - lastWeekMonday.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      const newDate = this.addDays(nextWeekMonday, offsetDays);
+
+      // пропускаем, если уже есть такая смена
+      const exists = await this.prisma.doctorShift.findFirst({
+        where: {
+          doctorId,
+          cabinetId: doctor.cabinetId,
+          date: newDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        },
+      });
+
+      if (exists) continue;
+
+      await this.create({
+        doctorId,
+        cabinetId: doctor.cabinetId,
+        date: newDate,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      });
+    }
+
+    // возвращаем все смены врача в диапазоне новой недели
+    return this.prisma.doctorShift.findMany({
+      where: {
+        doctorId,
+        date: {
+          gte: nextWeekMonday,
+          lte: nextWeekSunday,
+        },
+      },
+      include: { cabinet: true, doctor: true },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    });
+  }
 }

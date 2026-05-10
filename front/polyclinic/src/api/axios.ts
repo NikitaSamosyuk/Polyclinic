@@ -1,4 +1,3 @@
-// src/api/axios.ts
 import axios from 'axios'
 
 let loggedOut = false
@@ -37,7 +36,7 @@ api.interceptors.response.use(
     if (!original) return Promise.reject(err)
 
     const status = err.response?.status
-    const fullPath = original.baseURL + original.url // ← ВАЖНО
+    const fullPath = original.baseURL + original.url
     const isAuthRequest =
       fullPath.startsWith('/api/auth/') ||
       fullPath === '/api/users/password'
@@ -45,7 +44,7 @@ api.interceptors.response.use(
     // После logout refresh запрещён
     if (loggedOut) return Promise.reject(err)
 
-    // Ошибки auth-запросов НЕ трогаем
+    // Ошибки auth-запросов не трогаем
     if (status === 401 && isAuthRequest) return Promise.reject(err)
 
     // Refresh токена

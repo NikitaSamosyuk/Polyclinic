@@ -19,8 +19,6 @@ interface AuthRequest extends Request {
   user?: {
     sub: number;
     role: 'ADMIN' | 'DOCTOR' | 'PATIENT';
-    iat?: number;
-    exp?: number;
   };
 }
 
@@ -58,7 +56,7 @@ export class CabinetsController {
     @Body() dto: CreateCabinetDto,
   ): Promise<Cabinet> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Недостаточно прав для создания кабинета');
+      throw new ForbiddenException('Недостаточно прав');
     }
 
     return this.cabinets.create(dto);
@@ -71,7 +69,7 @@ export class CabinetsController {
     @Body() dto: UpdateCabinetDto,
   ): Promise<Cabinet> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException('Недостаточно прав для изменения кабинета');
+      throw new ForbiddenException('Недостаточно прав');
     }
 
     return this.cabinets.update(parseInt(id, 10), dto);
@@ -83,9 +81,7 @@ export class CabinetsController {
     @Param('id') id: string,
   ): Promise<Cabinet> {
     if (!req.user || req.user.role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Недостаточно прав для деактивации кабинета',
-      );
+      throw new ForbiddenException('Недостаточно прав');
     }
 
     return this.cabinets.deactivate(parseInt(id, 10));

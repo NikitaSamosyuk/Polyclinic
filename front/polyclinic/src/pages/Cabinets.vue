@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getCabinets, createCabinet } from '@/api/cabinets'
+import { getCabinets } from '@/api/cabinets'
+
 import CabinetCard from '@/components/CabinetCard.vue'
 import DoctorModal from '@/components/DoctorModal.vue'
-import CabinetEditModal from '@/pages/Cabinet/CabinetEditModal.vue'
-import ShiftModal from '@/pages/Cabinet/ShiftModal.vue'
+import CabinetEditModal from '@/pages/Admin/CabinetEditModal.vue'
+import ShiftModal from '@/pages/Admin/ShiftModal.vue'
+import CreateCabinetModal from '@/pages/Admin/CreateCabinetModal.vue'
+
 import { useAuthStore } from '@/store/auth.store'
 
 const auth = useAuthStore()
@@ -30,14 +33,16 @@ const showShiftModal = ref(false)
 const shiftData = ref({
   doctor: null,
   shift: null,
-  cabinetId: null,
+  date: null,
 })
+
+const showCreateModal = ref(false)
 
 async function load() {
   loading.value = true
   try {
     const res = await getCabinets()
-    cabinets.value = res
+    cabinets.value = res.filter((c: any) => c.isActive)
   } finally {
     loading.value = false
   }
@@ -85,37 +90,14 @@ function openDoctor(id: number) {
   showDoctorModal.value = true
 }
 
-function closeDoctor() {
-  showDoctorModal.value = false
-  selectedDoctorId.value = null
-}
-
 function openEdit(cab) {
   editCabinet.value = cab
   showEditModal.value = true
 }
 
-function openShift({ doctor, shift }) {
-  shiftData.value = {
-    doctor,
-    shift,
-    cabinetId: doctor.cabinetId || doctor.cabinet?.id || null,
-  }
+function openShift({ doctor, shift, date }) {
+  shiftData.value = { doctor, shift, date }
   showShiftModal.value = true
-}
-
-async function createNewCabinet() {
-  const number = prompt('Введите номер кабинета:')
-  if (!number) return
-
-  await createCabinet({
-    number,
-    workingHoursStart: '08:00',
-    workingHoursEnd: '18:00',
-    slotDuration: 15,
-  })
-
-  load()
 }
 
 onMounted(load)
@@ -129,7 +111,7 @@ onMounted(load)
 
       <button
         v-if="auth.user?.role === 'ADMIN'"
-        @click="createNewCabinet"
+        @click="showCreateModal = true"
         class="px-5 py-2.5 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 transition"
       >
         + Создать кабинет
@@ -140,33 +122,28 @@ onMounted(load)
     <div
       class="bg-white border border-teal-400 rounded-xl shadow p-6 flex flex-col md:flex-row gap-6"
     >
-      <!-- Поиск -->
       <div class="relative flex-1">
         <input
           v-model="searchInput"
           @keyup.enter="applySearch"
-          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
+          class="w-full px-4 py-3 border border-teal-400 rounded-lg shadow-sm"
           placeholder="Поиск по номеру кабинета или ФИО врача"
         />
-
         <button
           @click="applySearch"
-          class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100 transition"
+          class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 opacity-70 hover:opacity-100"
         >
-          <img src="@/assets/look.png" alt="search" class="w-6 h-6 object-contain" />
+          <img src="@/assets/look.png" class="w-6 h-6" />
         </button>
       </div>
 
-      <!-- Фильтр -->
       <div>
         <select
           v-model="selectedSpecialization"
           @change="applySearch"
-          class="px-4 py-3 border border-teal-400 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-teal-400"
+          class="px-4 py-3 border border-teal-400 rounded-lg bg-white shadow-sm"
         >
-          <option v-for="s in specializations" :key="s" :value="s">
-            {{ s }}
-          </option>
+          <option v-for="s in specializations" :key="s" :value="s">{{ s }}</option>
         </select>
       </div>
     </div>
@@ -193,7 +170,7 @@ onMounted(load)
         v-for="page in totalPages"
         :key="page"
         @click="currentPage = page"
-        class="px-4 py-2 rounded-lg border border-teal-300 shadow-sm transition"
+        class="px-4 py-2 rounded-lg border border-teal-300 shadow-sm"
         :class="
           page === currentPage
             ? 'bg-teal-600 text-white'
@@ -209,7 +186,7 @@ onMounted(load)
       v-if="showDoctorModal"
       :show="showDoctorModal"
       :doctor-id="selectedDoctorId"
-      @close="closeDoctor"
+      @close="showDoctorModal = false"
     />
 
     <CabinetEditModal
@@ -221,13 +198,20 @@ onMounted(load)
     />
 
     <ShiftModal
-      v-if="showShiftModal && shiftData.doctor && shiftData.cabinetId !== null"
+      v-if="showShiftModal"
       :show="showShiftModal"
       :shift="shiftData.shift"
-      :doctor-id="shiftData.doctor.id"
-      :cabinet-id="shiftData.cabinetId"
+      :doctor="shiftData.doctor"
+      :date="shiftData.date"
       @close="showShiftModal = false"
       @updated="load"
+    />
+
+    <CreateCabinetModal
+      v-if="showCreateModal"
+      :show="showCreateModal"
+      @close="showCreateModal = false"
+      @created="load"
     />
   </div>
 </template>

@@ -27,17 +27,17 @@ export class DatabaseInitService implements OnModuleInit {
 
     const adminPassword = await bcrypt.hash('admin123', 10);
 
-    // 1. Админ
+    // Админ
     await this.prisma.user.create({
       data: {
         username: 'admin',
-        email: 'admin@mail.com',
+        email: 'admin@gmail.com',
         passwordHash: adminPassword,
         role: Role.ADMIN,
       },
     });
 
-    // 2. Врачи (users)
+    // Врачи (users)
     const doctorsList = [
       {
         first: 'Владислав',
@@ -149,7 +149,7 @@ export class DatabaseInitService implements OnModuleInit {
     await this.prisma.user.createMany({
       data: doctorsList.map((_, i) => ({
         username: `doctor${i + 1}`,
-        email: `doctor${i + 1}@mail.com`,
+        email: `doctor${i + 1}@gmail.com`,
         passwordHash: adminPassword,
         role: Role.DOCTOR,
       })),
@@ -160,7 +160,7 @@ export class DatabaseInitService implements OnModuleInit {
       orderBy: { id: 'asc' },
     });
 
-    // 3. Кабинеты
+    // Кабинеты
     const cabinetsData = Array.from({ length: 10 }).map((_, i) => ({
       number: String(101 + i),
       specialization: 'Комбинированный',
@@ -175,7 +175,7 @@ export class DatabaseInitService implements OnModuleInit {
       orderBy: { id: 'asc' },
     });
 
-    // 4. doctorProfiles
+    // doctorProfiles
     const doctorProfilesData = doctorsList.map((d, i) => ({
       userId: doctorUsers[i].id,
       firstName: d.first,
@@ -193,7 +193,7 @@ export class DatabaseInitService implements OnModuleInit {
       orderBy: { id: 'asc' },
     });
 
-    // 4.1 Зоны терапевтов
+    // Зоны терапевтов
     console.log('--- Создаём тестовые зоны терапевтов ---');
 
     const therapistDoctors = doctorProfiles.filter((d) => d.isTherapist);
@@ -222,7 +222,7 @@ export class DatabaseInitService implements OnModuleInit {
 
     console.log('--- Зоны терапевтов созданы! ---');
 
-    // 5. Шаблоны расписания
+    // Шаблоны расписания
     for (const doc of doctorProfiles) {
       const cab = cabinets.find((c) => c.id === doc.cabinetId)!;
       await this.prisma.doctorScheduleTemplate.createMany({
@@ -235,15 +235,15 @@ export class DatabaseInitService implements OnModuleInit {
       });
     }
 
-    // 6. Генерация смен
+    // Генерация смен
     for (const doc of doctorProfiles) {
       await this.doctorSchedule.generateShiftsForNextPeriod(doc.id);
     }
 
-    // 7. Пациенты
+    // Пациенты
     const patientUsersData = Array.from({ length: 100 }).map((_, i) => ({
       username: `patient${i + 1}`,
-      email: `patient${i + 1}@mail.com`,
+      email: `patient${i + 1}@gmail.com`,
       passwordHash: adminPassword,
       role: Role.PATIENT,
     }));
@@ -285,7 +285,7 @@ export class DatabaseInitService implements OnModuleInit {
 
     await this.prisma.patient.createMany({ data: patientProfilesData });
 
-    // 8. Записи
+    // Записи
     console.log('--- Создаём записи пациентов ---');
 
     const allDoctors = doctorProfiles;
@@ -332,7 +332,7 @@ export class DatabaseInitService implements OnModuleInit {
 
     console.log(`--- Создано ${createdAppointments} записей ---`);
 
-    // 9. Визиты
+    // Визиты
     console.log('--- Создаём визиты ---');
 
     const appointments = await this.prisma.appointment.findMany({

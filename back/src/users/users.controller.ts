@@ -1,4 +1,3 @@
-// src/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -24,7 +23,6 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 export class UsersController {
   constructor(private users: UsersService) {}
 
-  // --- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ-ДОКТОРА ---
   @Post('doctor')
   async createDoctorUser(@Body() dto: any) {
     return this.users.createDoctorUser(dto);

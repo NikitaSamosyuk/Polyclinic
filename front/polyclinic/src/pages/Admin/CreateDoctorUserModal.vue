@@ -20,7 +20,7 @@ async function createUser() {
   try {
     const res = await usersApi.createDoctorUser(form.value)
 
-    // ВАЖНО: backend НЕ возвращает res.id
+    // backend НЕ возвращает res.id
     const userId = res?.id || res?.userId || res?.user?.id || res?.data?.id
 
     if (!userId) {

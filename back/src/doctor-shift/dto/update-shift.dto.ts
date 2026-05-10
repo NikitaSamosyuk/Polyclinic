@@ -11,7 +11,6 @@ export class UpdateShiftDto {
   @IsOptional()
   cabinetId?: number;
 
-  // теперь Date
   @IsOptional()
   date?: Date;
 

@@ -36,7 +36,7 @@ async function load() {
     const res = await api.get('/therapist-zones')
     zones.value = res.data
 
-    // 🔥 сразу раскрываем всех врачей, чтобы зоны были видны
+    // сразу раскрываем всех врачей, чтобы зоны были видны
     openedDoctorIds.value = Array.from(new Set(zones.value.map((z: any) => z.doctorId)))
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ошибка загрузки'

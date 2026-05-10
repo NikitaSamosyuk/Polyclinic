@@ -5,7 +5,7 @@ import { getMyProfile } from '@/api/patients'
 import { getSlotsForDoctor } from '@/api/schedule'
 import { createAppointment } from '@/api/appointments'
 import AppointmentCalendar from '@/components/AppointmentCalendar.vue'
-import DoctorModal from '@/components/DoctorModal.vue' // ✅ ДОБАВЛЕНО
+import DoctorModal from '@/components/DoctorModal.vue'
 
 const props = defineProps<{
   modelValue: boolean

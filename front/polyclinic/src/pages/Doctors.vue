@@ -23,17 +23,17 @@ const filterTherapist = ref(false)
 const currentPage = ref(1)
 const perPage = 12
 
-// --- ADMIN MODALS ---
+// админка модалка
 const showDeactivateConfirm = ref(false)
 const showActivateConfirm = ref(false)
 const showEditModal = ref(false)
 const selectedDoctor = ref<any | null>(null)
 
-// --- LOAD DOCTORS ---
+// загрузка врачей
 async function load() {
   loading.value = true
   try {
-    // ВСЕГДА грузим активных врачей — доступно всем
+    //всегда грузим активных врачей - доступно всем
     const res = await doctorsApi.getAllActive()
     doctors.value = res
   } catch (e: any) {
@@ -43,13 +43,11 @@ async function load() {
   }
 }
 
-// --- SEARCH ---
 function applySearch() {
   searchQuery.value = searchInput.value.trim().toLowerCase()
   currentPage.value = 1
 }
 
-// --- FILTERS ---
 const specializations = computed(() => {
   const set = new Set<string>()
   doctors.value.forEach((d) => set.add(d.specialization))
@@ -79,7 +77,7 @@ const paginatedDoctors = computed(() => {
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredDoctors.value.length / perPage)))
 
-// --- ADMIN ACTIONS ---
+// действия админа
 function requestDeactivate(d: any) {
   selectedDoctor.value = d
   showDeactivateConfirm.value = true

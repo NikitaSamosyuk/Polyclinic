@@ -20,7 +20,6 @@ export class AuthService {
     const exists = await this.users.findByEmail(dto.email);
     if (exists) throw new ConflictException('Email already taken');
 
-    // ✔ создаём пользователя (UsersService сам хэширует пароль)
     const user = await this.users.createUser({
       username: dto.username,
       email: dto.email,

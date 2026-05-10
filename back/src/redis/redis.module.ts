@@ -1,4 +1,3 @@
-// src/redis/redis.module.ts
 import { Global, Module } from '@nestjs/common';
 import { RedisModule as NestRedisModule } from '@nestjs-modules/ioredis';
 import { RedisService } from './redis.service';
@@ -8,7 +7,7 @@ import { RedisService } from './redis.service';
   imports: [
     NestRedisModule.forRoot({
       type: 'single',
-      url: process.env.REDIS_URL || 'redis://redis:6379', // под docker-compose
+      url: process.env.REDIS_URL || 'redis://redis:6379',
     }),
   ],
   providers: [RedisService],

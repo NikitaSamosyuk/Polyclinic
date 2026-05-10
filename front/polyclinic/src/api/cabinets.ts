@@ -3,6 +3,7 @@ import api from './axios'
 export interface Cabinet {
   id: number
   number: string
+  floor: number | null
   specialization: string
   workingHoursStart: string
   workingHoursEnd: string
@@ -24,17 +25,47 @@ export async function getCabinet(id: number): Promise<Cabinet> {
 
 export async function createCabinet(data: {
   number: string
+  floor?: number | null
   specialization?: string
   workingHoursStart: string
   workingHoursEnd: string
   slotDuration: number
 }) {
-  const res = await api.post('/cabinets', data)
+  const clean = {
+    number: data.number,
+    floor: data.floor ?? null,
+    specialization: data.specialization,
+    workingHoursStart: data.workingHoursStart,
+    workingHoursEnd: data.workingHoursEnd,
+    slotDuration: data.slotDuration,
+  }
+
+  const res = await api.post('/cabinets', clean)
   return res.data
 }
 
-export async function updateCabinet(id: number, data: any) {
-  const res = await api.patch(`/cabinets/${id}`, data)
+export interface UpdateCabinetPayload {
+  number?: string
+  floor?: number | null
+  specialization?: string
+  workingHoursStart?: string
+  workingHoursEnd?: string
+  slotDuration?: number
+  isActive?: boolean
+}
+
+export async function updateCabinet(id: number, data: UpdateCabinetPayload) {
+  const clean: UpdateCabinetPayload = {
+    number: data.number,
+    floor: data.floor,
+    specialization: data.specialization,
+    workingHoursStart: data.workingHoursStart,
+    workingHoursEnd: data.workingHoursEnd,
+    slotDuration: data.slotDuration,
+    isActive: data.isActive,
+  }
+
+  const res = await api.patch(`/cabinets/${id}`, clean)
   return res.data
 }
 
@@ -43,9 +74,6 @@ export async function deactivateCabinet(id: number) {
   return res.data
 }
 
-/* ---------------------------------------------------------
-   ДОБАВЛЯЮ cabinetsApi, чтобы модалки могли его импортировать
---------------------------------------------------------- */
 export const cabinetsApi = {
   getAll: getCabinets,
   getById: getCabinet,

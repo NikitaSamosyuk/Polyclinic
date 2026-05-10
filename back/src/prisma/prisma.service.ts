@@ -17,7 +17,6 @@ export class PrismaService
 
     const adapter = new PrismaPg(pool);
 
-    // ВАЖНО: вызываем super — теперь PrismaClient полностью типизирован
     super({ adapter });
 
     this.pool = pool;

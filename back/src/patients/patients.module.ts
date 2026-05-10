@@ -5,10 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TherapistZonesModule } from '../therapist-zones/therapist-zones.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    TherapistZonesModule, // ← ОБЯЗАТЕЛЬНО
-  ],
+  imports: [PrismaModule, TherapistZonesModule],
   controllers: [PatientsController],
   providers: [PatientsService],
   exports: [PatientsService],

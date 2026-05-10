@@ -1,4 +1,3 @@
-// src/api/auth.ts
 import api from './axios'
 
 export const authApi = {

@@ -118,10 +118,6 @@ const times = computed(() => {
   return [...set].filter(Boolean).sort()
 })
 
-/* ----------------------------------------------------------
-   🔥 ЛОГИКА ДОСТУПА (главное!)
----------------------------------------------------------- */
-
 function canEditVisit(v: any) {
   if (auth.user?.role === 'ADMIN') return true
   if (auth.user?.role !== 'DOCTOR') return false
@@ -136,10 +132,6 @@ function canDeleteVisit(v: any) {
 
   return v.appointment?.doctorId === v.doctor.id
 }
-
-/* ----------------------------------------------------------
-   🔥 МОДАЛКИ
----------------------------------------------------------- */
 
 function openDeleteModal(visit: any) {
   selectedVisit.value = visit

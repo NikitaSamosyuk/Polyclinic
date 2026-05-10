@@ -1,4 +1,3 @@
-// src/api/users.ts
 import api from './axios'
 
 export const usersApi = {
@@ -29,7 +28,7 @@ export const usersApi = {
     return api.get('/patients/me')
   },
 
-  // 🔥 СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ДЛЯ ВРАЧА
+  // создание профиля для врача
   createDoctorUser(payload: { username: string; email: string; password: string }) {
     return api.post('/users/doctor', payload)
   },

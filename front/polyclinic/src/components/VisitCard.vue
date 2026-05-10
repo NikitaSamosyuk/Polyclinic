@@ -11,7 +11,7 @@ const props = defineProps({
   isDoctor: { type: Boolean, required: true },
   isPatient: { type: Boolean, required: true },
 
-  // 🔥 главное — флаги доступа, переданные из Visits.vue
+  // главное — флаги доступа, переданные из Visits.vue
   canEdit: { type: Boolean, required: true },
   canDelete: { type: Boolean, required: true },
 })

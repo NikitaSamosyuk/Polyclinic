@@ -14,7 +14,6 @@ export class UpdateAppointmentDto {
   @Matches(TIME_REGEX, { message: 'startTime must be in HH:MM format' })
   startTime?: string;
 
-  // endTime админ явно не задаёт — пересчитываем по слоту, но поле оставим на будущее
   @IsOptional()
   @IsString()
   @Matches(TIME_REGEX, { message: 'endTime must be in HH:MM format' })
