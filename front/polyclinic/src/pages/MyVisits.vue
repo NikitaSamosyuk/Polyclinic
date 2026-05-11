@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
-import { getMyVisits, deleteVisit, updateVisit } from '@/api/visits'
+import { getMyVisits, deleteVisit, updateVisit, visitFilesApi } from '@/api/visits'
 
 import VisitCard from '@/components/VisitCard.vue'
 import VisitDeleteModal from '@/pages/visit/VisitDeleteModal.vue'
@@ -74,8 +74,7 @@ const filtered = computed(() => {
     return matchSearch && matchYear && matchMonth && matchDay && matchTime
   })
 
-  list = list.sort((a, b) => a.visitDatetime.localeCompare(b.visitDatetime))
-
+  list = list.sort((a, b) => b.visitDatetime.localeCompare(a.visitDatetime))
   return list
 })
 
@@ -135,9 +134,25 @@ async function confirmDelete(visit: any) {
   }
 }
 
-async function saveEdit(dto: any) {
+/* ---------------- ГЛАВНОЕ: saveEdit ---------------- */
+
+async function saveEdit(payload: { dto: any; filesToDelete: number[]; newFiles: File[] }) {
   try {
-    await updateVisit(selectedVisit.value.id, dto)
+    const visitId = selectedVisit.value.id
+
+    // 1. Обновляем текстовые поля визита
+    await updateVisit(visitId, payload.dto)
+
+    // 2. Удаляем отмеченные файлы
+    for (const fileId of payload.filesToDelete) {
+      await visitFilesApi.delete(fileId)
+    }
+
+    // 3. Загружаем новые файлы
+    for (const file of payload.newFiles) {
+      await visitFilesApi.upload(visitId, file)
+    }
+
     showEdit.value = false
     await load()
   } catch (e: any) {
@@ -225,6 +240,8 @@ onMounted(load)
         :isAdmin="auth.user?.role === 'ADMIN'"
         :isDoctor="auth.user?.role === 'DOCTOR'"
         :isPatient="auth.user?.role === 'PATIENT'"
+        :canEdit="auth.user?.role === 'DOCTOR' && v.doctor.userId === auth.user?.id"
+        :canDelete="auth.user?.role === 'DOCTOR' && v.doctor.userId === auth.user?.id"
         @delete-visit="openDeleteModal"
         @edit-visit="openEditModal"
         class="self-start"

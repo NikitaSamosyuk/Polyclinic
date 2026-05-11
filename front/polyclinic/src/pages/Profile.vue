@@ -45,13 +45,6 @@ async function loadPatientProfile() {
   if (auth.user?.role !== 'PATIENT') return
 
   const data = await patientsApi.me()
-
-  //  Если пациент деактивирован — низя в профиль
-  if (!data.user?.isActive) {
-    patient.value = null
-    return
-  }
-
   patient.value = data
 }
 
@@ -64,13 +57,6 @@ async function loadDoctorProfile() {
 
   const res = await doctorsApi.getByUserId(userId)
   const data = res.doctor ?? res
-
-  // Если врач деактивирован — низя в профиль
-  if (!data.user?.isActive) {
-    doctor.value = null
-    return
-  }
-
   doctor.value = data
 }
 
@@ -192,14 +178,6 @@ function onPatientRegistered() {
     <div v-if="loading" class="text-gray-600 text-lg text-center py-10">Загрузка...</div>
 
     <template v-else>
-      <!-- ❗ Если пользователь деактивирован -->
-      <div
-        v-if="auth.user && auth.user.role !== 'ADMIN' && !patient && !doctor"
-        class="bg-red-100 border border-red-400 text-red-700 p-6 rounded-xl text-center text-lg font-semibold"
-      >
-        Ваш профиль деактивирован. Обратитесь к администратору.
-      </div>
-
       <!-- USER CARD -->
       <div
         v-if="auth.user"

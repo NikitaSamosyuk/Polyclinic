@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/store/auth.store'
-import { getVisits, deleteVisit, updateVisit } from '@/api/visits'
+import { getVisits, deleteVisit, updateVisit, visitFilesApi } from '@/api/visits'
+
 import VisitCard from '@/components/VisitCard.vue'
 import VisitDeleteModal from '@/pages/visit/VisitDeleteModal.vue'
 import VisitEditModal from '@/pages/visit/VisitEditModal.vue'
@@ -79,8 +80,7 @@ const filtered = computed(() => {
     return matchSearch && matchYear && matchMonth && matchDay && matchTime
   })
 
-  list = list.sort((a, b) => a.visitDatetime.localeCompare(b.visitDatetime))
-
+  list = list.sort((a, b) => b.visitDatetime.localeCompare(a.visitDatetime))
   return list
 })
 
@@ -118,21 +118,24 @@ const times = computed(() => {
   return [...set].filter(Boolean).sort()
 })
 
+/* ----------------------------------------------------------
+   🔥 ПРАВА ДОСТУПА
+---------------------------------------------------------- */
 function canEditVisit(v: any) {
   if (auth.user?.role === 'ADMIN') return true
   if (auth.user?.role !== 'DOCTOR') return false
-
-  // врач может редактировать визит, если он врач записи
-  return v.appointment?.doctorId === v.doctor.id
+  return v.doctor.userId === auth.user.id
 }
 
 function canDeleteVisit(v: any) {
   if (auth.user?.role === 'ADMIN') return true
   if (auth.user?.role !== 'DOCTOR') return false
-
-  return v.appointment?.doctorId === v.doctor.id
+  return v.doctor.userId === auth.user.id
 }
 
+/* ----------------------------------------------------------
+   🔥 МОДАЛКИ
+---------------------------------------------------------- */
 function openDeleteModal(visit: any) {
   selectedVisit.value = visit
   showDelete.value = true
@@ -153,9 +156,26 @@ async function confirmDelete(visit: any) {
   }
 }
 
-async function saveEdit(dto: any) {
+/* ----------------------------------------------------------
+   🔥 saveEdit — ПОЛНОСТЬЮ ИСПРАВЛЕН
+---------------------------------------------------------- */
+async function saveEdit(payload: { dto: any; filesToDelete: number[]; newFiles: File[] }) {
   try {
-    await updateVisit(selectedVisit.value.id, dto)
+    const visitId = selectedVisit.value.id
+
+    // 1. Обновляем текстовые поля визита
+    await updateVisit(visitId, payload.dto)
+
+    // 2. Удаляем отмеченные файлы
+    for (const fileId of payload.filesToDelete) {
+      await visitFilesApi.delete(fileId)
+    }
+
+    // 3. Загружаем новые файлы
+    for (const file of payload.newFiles) {
+      await visitFilesApi.upload(visitId, file)
+    }
+
     showEdit.value = false
     await load()
   } catch (e: any) {

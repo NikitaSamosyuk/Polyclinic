@@ -7,7 +7,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'edit', appt: any): void
   (e: 'delete', appt: any): void
   (e: 'open', appt: any): void
   (e: 'open-doctor', doctor: any): void
@@ -40,21 +39,27 @@ function isFuture() {
     class="relative bg-white border border-teal-300 rounded-xl shadow-md p-6 flex flex-col gap-5 hover:shadow-lg transition cursor-pointer"
     @click="open"
   >
-    <!-- Кнопка отмены (только пациент, только будущие) -->
+    <!-- ❌ КРЕСТИК (удалить запись — только админ/врач, только если нет визита) -->
+    <button
+      v-if="(isAdmin || isDoctor) && !appointment.visit"
+      @click.stop="emit('delete', appointment)"
+      class="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 transition"
+      title="Удалить запись"
+    >
+      <img src="@/assets/cancel.png" class="w-5 h-5 opacity-80 hover:opacity-100" />
+    </button>
+
+    <!-- ❌ КРЕСТИК (отменить запись — только пациент, только будущие) -->
     <button
       v-if="isPatient && isFuture()"
       @click="cancel"
       class="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 transition"
       title="Отказаться от записи"
     >
-      <img
-        src="@/assets/cancel.png"
-        alt="cancel"
-        class="w-5 h-5 opacity-80 hover:opacity-100 transition"
-      />
+      <img src="@/assets/cancel.png" class="w-5 h-5 opacity-80 hover:opacity-100" />
     </button>
 
-    <!-- Заголовок: дата + время -->
+    <!-- Дата и время -->
     <div class="pb-3 border-b border-gray-200">
       <h2 class="text-2xl font-bold text-teal-800">
         {{ new Date(appointment.appointmentDate).toLocaleDateString('ru-RU') }}
@@ -66,10 +71,9 @@ function isFuture() {
 
     <!-- Врач -->
     <div class="flex items-start gap-3">
-      <img src="@/assets/doctor-icon.png" alt="doctor icon" class="w-7 h-7 object-contain" />
+      <img src="@/assets/doctor-icon.png" class="w-7 h-7" />
 
       <div class="flex-1 flex flex-col gap-1">
-        <!-- ФИО + кнопки справа -->
         <div class="flex items-center justify-between gap-3">
           <p class="font-semibold text-lg text-gray-900 leading-tight">
             {{ appointment.doctor.lastName }}
@@ -80,20 +84,19 @@ function isFuture() {
           </p>
 
           <div class="flex items-center gap-2">
-            <!-- Кнопка врача -->
+            <!-- Открыть врача -->
             <button
               @click.stop="openDoctor"
-              class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow whitespace-nowrap"
+              class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
             >
               Открыть
             </button>
 
-            <!-- 🔥 Кнопка создания визита справа -->
+            <!-- 🔥 Создать визит -->
             <button
               v-if="(isDoctor || isAdmin) && !appointment.visit"
-              :disabled="!(isDoctor || isAdmin)"
               @click.stop="emit('create-visit', appointment)"
-              class="px-3 py-1 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+              class="px-3 py-1 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow"
             >
               Создать визит
             </button>
@@ -108,7 +111,7 @@ function isFuture() {
 
     <!-- Пациент -->
     <div v-if="isAdmin || isDoctor" class="flex items-start gap-3">
-      <img src="@/assets/patient-icon.png" alt="patient icon" class="w-7 h-7 object-contain" />
+      <img src="@/assets/patient-icon.png" class="w-7 h-7" />
 
       <p class="font-semibold text-lg text-gray-900 leading-tight">
         {{ appointment.patient.lastName }}
@@ -121,7 +124,7 @@ function isFuture() {
 
     <!-- Кабинет -->
     <div class="flex items-start gap-3">
-      <img src="@/assets/cabinet-icon.png" alt="cabinet icon" class="w-7 h-7 object-contain" />
+      <img src="@/assets/cabinet-icon.png" class="w-7 h-7" />
       <p class="font-medium text-lg text-gray-900">Кабинет №{{ appointment.cabinet.number }}</p>
     </div>
 
@@ -131,23 +134,6 @@ function isFuture() {
       class="bg-teal-50 border border-teal-200 rounded-lg p-4 shadow-sm"
     >
       <p class="text-sm text-gray-700"><b>Причина визита:</b> {{ appointment.reason }}</p>
-    </div>
-
-    <!-- Кнопки админа -->
-    <div v-if="isAdmin" class="pt-4 border-t border-gray-200 flex gap-3 justify-end" @click.stop>
-      <button
-        class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow"
-        @click="emit('edit', appointment)"
-      >
-        Редактировать
-      </button>
-
-      <button
-        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow"
-        @click="emit('delete', appointment)"
-      >
-        Удалить
-      </button>
     </div>
   </div>
 </template>

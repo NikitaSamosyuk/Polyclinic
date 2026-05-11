@@ -1,3 +1,4 @@
+// src/api/visits.ts
 import api from './axios'
 
 export const visitsApi = {
@@ -29,31 +30,39 @@ export const visitsApi = {
   async delete(id: number) {
     const res = await api.delete(`/visits/${id}`)
     return res.data
-  }
+  },
 }
 
 /* ---------------- УДОБНЫЕ ФУНКЦИИ ---------------- */
 
-export function getVisits() {
-  return visitsApi.getAll()
-}
+export const getVisits = () => visitsApi.getAll()
+export const getMyVisits = () => visitsApi.getMy()
+export const getVisitById = (id: number) => visitsApi.getById(id)
+export const createVisit = (dto: any) => visitsApi.create(dto)
+export const updateVisit = (id: number, dto: any) => visitsApi.update(id, dto)
+export const deleteVisit = (id: number) => visitsApi.delete(id)
 
-export function getMyVisits() {
-  return visitsApi.getMy()
-}
+/* ---------------- ФАЙЛЫ ВИЗИТА ---------------- */
 
-export function getVisitById(id: number) {
-  return visitsApi.getById(id)
-}
+export const visitFilesApi = {
+  async getByVisit(visitId: number) {
+    const res = await api.get(`/visit-files/${visitId}`)
+    return res.data
+  },
 
-export function createVisit(dto: any) {
-  return visitsApi.create(dto)
-}
+  async upload(visitId: number, file: File) {
+    const form = new FormData()
+    form.append('file', file)
 
-export function updateVisit(id: number, dto: any) {
-  return visitsApi.update(id, dto)
-}
+    const res = await api.post(`/visit-files/${visitId}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
 
-export function deleteVisit(id: number) {
-  return visitsApi.delete(id)
+    return res.data
+  },
+
+  async delete(fileId: number) {
+    const res = await api.delete(`/visit-files/file/${fileId}`)
+    return res.data
+  },
 }

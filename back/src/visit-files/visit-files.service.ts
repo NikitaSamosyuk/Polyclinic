@@ -1,3 +1,4 @@
+// src/visit-files/visit-files.service.ts
 import {
   ForbiddenException,
   Injectable,
@@ -39,6 +40,8 @@ export class VisitFilesService {
         );
       }
     }
+
+    // ADMIN проходит без ограничений, PATIENT вообще не может сюда попасть по AccessMap
 
     return this.prisma.attachedFile.create({
       data: {
@@ -83,6 +86,8 @@ export class VisitFilesService {
       }
     }
 
+    // ADMIN видит всё
+
     return visit.attachedFiles;
   }
 
@@ -112,7 +117,11 @@ export class VisitFilesService {
       }
     }
 
-    const fullPath = path.join(process.cwd(), file.filePath);
+    // ADMIN может удалять любые файлы
+
+    const relativePath = file.filePath.replace(/^\//, '');
+    const fullPath = path.join(process.cwd(), relativePath);
+
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
     }

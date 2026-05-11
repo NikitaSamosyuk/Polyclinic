@@ -18,7 +18,10 @@ const props = defineProps<{
   appointment: Appointment | null
 }>()
 
-const emit = defineEmits(['update:modelValue', 'saved'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void
+  (e: 'saved'): void
+}>()
 
 const step = ref(1)
 
@@ -40,23 +43,39 @@ async function load() {
 
   loading.value = true
   error.value = null
+  message.value = null
+  slots.value = []
+  calendarDays.value = []
+  selectedDoctor.value = null
+  selectedDate.value = null
+  selectedSlot.value = null
 
-  doctors.value = await getDoctors()
+  try {
+    // врачи
+    doctors.value = await getDoctors()
 
-  selectedDoctor.value = doctors.value.find((d) => d.id === props.appointment!.doctorId)
+    // текущий врач
+    selectedDoctor.value = doctors.value.find((d) => d.id === props.appointment!.doctorId) || null
 
-  selectedDate.value = props.appointment!.appointmentDate.slice(0, 10)
+    // текущая дата
+    selectedDate.value = props.appointment!.appointmentDate.slice(0, 10)
 
-  await loadCalendar(selectedDoctor.value.id)
-  await loadSlotsForSelectedDate()
+    if (selectedDoctor.value) {
+      await loadCalendar(selectedDoctor.value.id)
+      await loadSlotsForSelectedDate()
+    }
 
-  selectedSlot.value = {
-    start: props.appointment!.startTime,
-    end: props.appointment!.endTime,
-    isFree: true,
+    // текущий слот (для отображения на шаге подтверждения, если сразу нажать "Далее")
+    selectedSlot.value = {
+      start: props.appointment!.startTime,
+      end: props.appointment!.endTime,
+      isFree: true,
+    }
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Ошибка загрузки данных'
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 
 watch(
@@ -107,8 +126,19 @@ async function loadSlotsForSelectedDate() {
   slots.value = res.slots
 }
 
+watch(selectedDate, async () => {
+  // при смене даты — перезагружаем слоты
+  if (step.value === 3) {
+    await loadSlotsForSelectedDate()
+  }
+})
+
 function pickDoctor(d: any) {
   selectedDoctor.value = d
+  selectedDate.value = null
+  selectedSlot.value = null
+  message.value = null
+  slots.value = []
   loadCalendar(d.id)
   step.value = 2
 }
@@ -120,13 +150,17 @@ function pickSlot(slot: any) {
 }
 
 async function save() {
+  if (!props.appointment || !selectedDoctor.value || !selectedDate.value || !selectedSlot.value) {
+    return
+  }
+
   loading.value = true
   error.value = null
 
   try {
-    await updateAppointment(props.appointment!.id, {
+    await updateAppointment(props.appointment.id, {
       doctorId: selectedDoctor.value.id,
-      date: selectedDate.value!,
+      date: selectedDate.value,
       startTime: selectedSlot.value.start.slice(11, 16),
     })
 
@@ -148,8 +182,9 @@ async function save() {
       </button>
 
       <div v-if="error" class="text-red-600 mb-4">{{ error }}</div>
+      <div v-if="loading" class="text-gray-500 mb-4">Загрузка...</div>
 
-      <!-- ШАГ 1 -->
+      <!-- ШАГ 1: ВРАЧ -->
       <div v-if="step === 1">
         <h2 class="text-xl font-bold mb-4">Выберите врача</h2>
 
@@ -157,7 +192,7 @@ async function save() {
           <button
             v-for="d in doctors"
             :key="d.id"
-            class="w-full px-4 py-2 border rounded hover:bg-gray-100"
+            class="w-full px-4 py-2 border rounded hover:bg-gray-100 text-left"
             @click="pickDoctor(d)"
           >
             {{ d.lastName }} {{ d.firstName }} — {{ d.specialization }}
@@ -167,7 +202,7 @@ async function save() {
         <button class="mt-4 px-3 py-1 bg-gray-200 rounded" @click="close">Отмена</button>
       </div>
 
-      <!-- ШАГ 2 -->
+      <!-- ШАГ 2: ДАТА -->
       <div v-if="step === 2">
         <h2 class="text-xl font-bold mb-4">Выберите дату</h2>
 
@@ -176,16 +211,21 @@ async function save() {
         <div class="mt-4 flex justify-between">
           <button class="px-3 py-1 bg-gray-200 rounded" @click="step = 1">Назад</button>
           <button
-            class="px-3 py-1 bg-blue-600 text-white rounded"
+            class="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-300 disabled:text-gray-600"
             :disabled="!selectedDate"
-            @click="step = 3"
+            @click="
+              () => {
+                loadSlotsForSelectedDate()
+                step = 3
+              }
+            "
           >
             Далее
           </button>
         </div>
       </div>
 
-      <!-- ШАГ 3 -->
+      <!-- ШАГ 3: ВРЕМЯ -->
       <div v-if="step === 3">
         <h2 class="text-xl font-bold mb-4">Выберите время</h2>
 
@@ -204,10 +244,12 @@ async function save() {
           </button>
         </div>
 
-        <button class="mt-4 px-3 py-1 bg-gray-200 rounded" @click="step = 2">Назад</button>
+        <div class="mt-4 flex justify-between">
+          <button class="px-3 py-1 bg-gray-200 rounded" @click="step = 2">Назад</button>
+        </div>
       </div>
 
-      <!-- ШАГ 4 -->
+      <!-- ШАГ 4: ПОДТВЕРЖДЕНИЕ -->
       <div v-if="step === 4">
         <h2 class="text-xl font-bold mb-4">Подтверждение переноса</h2>
 
@@ -222,7 +264,7 @@ async function save() {
           <button class="px-3 py-1 bg-gray-200 rounded" @click="step = 3">Назад</button>
 
           <button
-            class="px-4 py-1 bg-green-600 text-white rounded"
+            class="px-4 py-1 bg-green-600 text-white rounded disabled:bg-gray-300"
             @click="save"
             :disabled="loading"
           >
@@ -231,7 +273,7 @@ async function save() {
         </div>
       </div>
 
-      <!-- ШАГ 5 -->
+      <!-- ШАГ 5: ГОТОВО -->
       <div v-if="step === 5">
         <h2 class="text-xl font-bold mb-4 text-green-700">Запись успешно перенесена!</h2>
 

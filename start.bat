@@ -1,44 +1,45 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM === 1. Переход в папку backend ===
-cd /d "C:\Users\samos\Desktop\Polyclinic\back"
+set "SCRIPT_DIR=%~dp0"
+
+cd /d "%SCRIPT_DIR%back"
 
 echo ===============================
-echo   Запуск: make rebuild
+echo   Start: make up
 echo ===============================
-make rebuild
+make up
 if errorlevel 1 (
-    echo Ошибка: make rebuild завершился с ошибкой.
+    echo Error: make up complete with mistake
     pause
     exit /b
 )
 
 echo.
 echo ===============================
-echo   Открытие нового окна для bun dev
+echo   Open new window for bun install + bun dev (with --bun)
 echo ===============================
 
-start "BUN DEV" cmd /k "cd /d C:\Users\samos\Desktop\Polyclinic\front\polyclinic && bun dev"
+start "BUN DEV" cmd /k "cd /d %SCRIPT_DIR%front\polyclinic && bun install && bunx vite"
 
 echo.
 echo ===============================
-echo   Открытие браузера
+echo   Open Browser
 echo ===============================
 
 start "" http://localhost:5173/
 
 echo.
 echo ===============================
-echo   Запуск: make logs
+echo   Start: make logs
 echo ===============================
 make logs
 if errorlevel 1 (
-    echo Ошибка: make logs завершился с ошибкой.
+    echo Error: make logs complete with mistake.
     pause
     exit /b
 )
 
 echo.
-echo Все процессы запущены.
+echo All process start.
 pause

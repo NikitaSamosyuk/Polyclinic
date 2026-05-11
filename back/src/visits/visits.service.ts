@@ -1,3 +1,4 @@
+// src/visits/visits.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -14,6 +15,8 @@ import {
   Patient,
   AttachedFile,
 } from '@prisma/client';
+
+type Role = 'ADMIN' | 'DOCTOR' | 'PATIENT';
 
 type VisitFull = Visit & {
   appointment: Appointment;
@@ -35,7 +38,7 @@ export class VisitsService {
 
   async create(
     userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
+    role: Role,
     dto: CreateVisitDto,
   ): Promise<VisitFull> {
     const appt = await this.prisma.appointment.findUnique({
@@ -81,10 +84,7 @@ export class VisitsService {
     });
   }
 
-  async getAll(
-    userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
-  ): Promise<VisitFull[]> {
+  async getAll(userSub: number, role: Role): Promise<VisitFull[]> {
     if (role === 'PATIENT') return this.getMy(userSub, role);
 
     return this.prisma.visit.findMany({
@@ -93,10 +93,7 @@ export class VisitsService {
     });
   }
 
-  async getMy(
-    userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
-  ): Promise<VisitFull[]> {
+  async getMy(userSub: number, role: Role): Promise<VisitFull[]> {
     if (role === 'PATIENT') {
       const patient = await this.prisma.patient.findUnique({
         where: { userId: userSub },
@@ -125,14 +122,11 @@ export class VisitsService {
       });
     }
 
+    // ADMIN: "мои" визиты не имеют смысла — можно вернуть пустой массив
     return [];
   }
 
-  async getById(
-    id: number,
-    userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
-  ): Promise<VisitFull> {
+  async getById(id: number, userSub: number, role: Role): Promise<VisitFull> {
     const visit = await this.prisma.visit.findUnique({
       where: { id },
       include: this.includeFull,
@@ -166,7 +160,7 @@ export class VisitsService {
   async update(
     id: number,
     userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
+    role: Role,
     dto: UpdateVisitDto,
   ): Promise<VisitFull> {
     const visit = await this.prisma.visit.findUnique({
@@ -200,11 +194,7 @@ export class VisitsService {
     });
   }
 
-  async delete(
-    id: number,
-    userSub: number,
-    role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
-  ): Promise<Visit> {
+  async delete(id: number, userSub: number, role: Role): Promise<Visit> {
     const visit = await this.prisma.visit.findUnique({
       where: { id },
       include: { appointment: true },

@@ -1,3 +1,4 @@
+// src/auth/access-map.ts
 export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   // --- AUTH ---
   'POST /auth/login': 'PUBLIC',
@@ -7,7 +8,7 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'POST /auth/logout': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- DOCTORS ---
-  'GET /doctors/active': 'PUBLIC', // ← теперь действительно публичный
+  'GET /doctors/active': 'PUBLIC',
   'GET /doctors/inactive': ['ADMIN'],
 
   'GET /doctors/:id': 'PUBLIC',
@@ -86,6 +87,7 @@ export const AccessMap: Record<string, 'PUBLIC' | string[]> = {
   'PATCH /visits/:id': ['DOCTOR', 'ADMIN'],
   'DELETE /visits/:id': ['DOCTOR', 'ADMIN'],
   'GET /visits': ['PATIENT', 'DOCTOR', 'ADMIN'],
+  'GET /visits/my': ['PATIENT', 'DOCTOR', 'ADMIN'],
   'GET /visits/:id': ['PATIENT', 'DOCTOR', 'ADMIN'],
 
   // --- VISIT FILES ---

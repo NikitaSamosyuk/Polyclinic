@@ -33,7 +33,6 @@ const selectedDoctor = ref<any | null>(null)
 async function load() {
   loading.value = true
   try {
-    //всегда грузим активных врачей - доступно всем
     const res = await doctorsApi.getAllActive()
     doctors.value = res
   } catch (e: any) {
@@ -112,14 +111,7 @@ onMounted(load)
   <div class="max-w-7xl mx-auto p-8 flex flex-col gap-10">
     <div class="flex justify-between items-center">
       <h1 class="text-4xl font-extrabold text-teal-800 tracking-tight">Врачи</h1>
-
-      <button
-        v-if="isAdmin"
-        class="bg-green-600 text-white px-6 py-3 rounded-lg shadow hover:bg-green-700 transition"
-        @click="$router.push('/admin')"
-      >
-        Создать врача
-      </button>
+      <!-- 🔥 Кнопка "Создать врача" удалена -->
     </div>
 
     <!-- Поиск + фильтры -->

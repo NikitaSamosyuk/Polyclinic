@@ -11,7 +11,7 @@ const props = defineProps({
   isDoctor: { type: Boolean, required: true },
   isPatient: { type: Boolean, required: true },
 
-  // главное — флаги доступа, переданные из Visits.vue
+  // флаги доступа
   canEdit: { type: Boolean, required: true },
   canDelete: { type: Boolean, required: true },
 })
@@ -67,7 +67,7 @@ async function downloadFile(file: any) {
   <div
     class="relative w-full bg-white border border-teal-300 rounded-xl shadow-md hover:shadow-lg transition overflow-hidden"
   >
-    <!-- ❌ КРЕСТИК (только если canDelete) -->
+    <!-- ❌ КРЕСТИК (удалить визит) -->
     <button
       v-if="canDelete"
       @click.stop="emit('delete-visit', visit)"
@@ -126,6 +126,7 @@ async function downloadFile(file: any) {
             <b>Рекомендации:</b> {{ visit.recommendations || '—' }}
           </p>
 
+          <!-- Файлы -->
           <div v-if="visit.attachedFiles?.length">
             <h4 class="font-semibold text-teal-700 mb-2">Файлы визита:</h4>
 
@@ -147,8 +148,9 @@ async function downloadFile(file: any) {
             </ul>
           </div>
 
-          <!-- 🔥 Кнопка "Изменить визит" (только если canEdit) -->
+          <!-- 🔥 Кнопки управления визитом -->
           <div v-if="canEdit" class="pt-4 border-t border-gray-200 flex gap-3 justify-end">
+            <!-- Изменить -->
             <button
               class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 shadow"
               @click.stop="emit('edit-visit', visit)"

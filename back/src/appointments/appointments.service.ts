@@ -8,12 +8,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ScheduleService } from '../schedule/schedule.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
-import { Appointment, Doctor, Patient, Cabinet } from '@prisma/client';
+import { Appointment, Doctor, Patient, Cabinet, Visit } from '@prisma/client';
 
 type AppointmentWithRelations = Appointment & {
   doctor: Doctor;
   patient: Patient;
   cabinet: Cabinet;
+  visit: Visit | null;
 };
 
 @Injectable()
@@ -27,6 +28,7 @@ export class AppointmentsService {
     doctor: true,
     patient: true,
     cabinet: true,
+    visit: true,
   } as const;
 
   async create(
@@ -96,9 +98,7 @@ export class AppointmentsService {
       if (!patient) return [];
 
       return this.prisma.appointment.findMany({
-        where: {
-          patientId: patient.id,
-        },
+        where: { patientId: patient.id },
         orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
         include: this.fullInclude,
       }) as Promise<AppointmentWithRelations[]>;
@@ -109,9 +109,7 @@ export class AppointmentsService {
       if (!doctor) return [];
 
       return this.prisma.appointment.findMany({
-        where: {
-          doctorId: doctor.id,
-        },
+        where: { doctorId: doctor.id },
         orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }],
         include: this.fullInclude,
       }) as Promise<AppointmentWithRelations[]>;
@@ -139,6 +137,7 @@ export class AppointmentsService {
 
     const appt = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
+      include: { visit: true },
     });
 
     if (!appt) {
@@ -147,6 +146,12 @@ export class AppointmentsService {
 
     if (appt.patientId !== patient.id) {
       throw new ForbiddenException('Вы не можете отменить чужую запись');
+    }
+
+    if (appt.visit) {
+      throw new BadRequestException(
+        'Нельзя отменить запись — по ней уже создан визит',
+      );
     }
 
     return this.prisma.appointment.delete({
@@ -228,11 +233,23 @@ export class AppointmentsService {
   }
 
   async delete(id: number): Promise<Appointment> {
-    const appt = await this.prisma.appointment.findUnique({ where: { id } });
+    const appt = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: { visit: true },
+    });
+
     if (!appt) {
       throw new NotFoundException('Запись не найдена');
     }
 
-    return this.prisma.appointment.delete({ where: { id } });
+    if (appt.visit) {
+      throw new BadRequestException(
+        'Нельзя удалить запись — по ней уже создан визит',
+      );
+    }
+
+    return this.prisma.appointment.delete({
+      where: { id },
+    });
   }
 }

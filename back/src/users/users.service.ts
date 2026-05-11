@@ -103,6 +103,7 @@ export class UsersService {
   async update(id: number, data: { username?: string; email?: string }) {
     const updateData: Record<string, any> = {};
 
+    // --- Email остаётся уникальным ---
     if (data.email !== undefined) {
       const exists = await this.prisma.user.findUnique({
         where: { email: data.email },
@@ -115,15 +116,8 @@ export class UsersService {
       updateData.email = data.email;
     }
 
+    // --- Username НЕ уникальный ---
     if (data.username !== undefined) {
-      const exists = await this.prisma.user.findFirst({
-        where: { username: data.username },
-      });
-
-      if (exists && exists.id !== id) {
-        throw new BadRequestException('Username already taken');
-      }
-
       updateData.username = data.username;
     }
 
